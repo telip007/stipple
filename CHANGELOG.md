@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/telip007/stipple/compare/0.1.1...0.2.0) (2026-10-18)
+
+
+### Features
+
+* add ScrollView, ScrollPosition and mouse wheel scrolling ([63a411f](https://github.com/telip007/stipple/commit/63a411f2720d7b46ab77acc29e060b949a9f21d9))
+
 ## [0.1.1](https://github.com/telip007/stipple/compare/0.1.0...0.1.1) (2026-10-18)
 
 
