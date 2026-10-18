@@ -27,6 +27,13 @@ let package = Package(
             name: "Stipple",
             swiftSettings: strictSettings,
         ),
+        // Runnable examples: `swift run counter`, `swift run tasks`, `swift run chat`.
+        .executableTarget(
+            name: "counter", dependencies: ["Stipple"], path: "Examples/Counter", swiftSettings: strictSettings),
+        .executableTarget(
+            name: "tasks", dependencies: ["Stipple"], path: "Examples/Tasks", swiftSettings: strictSettings),
+        .executableTarget(
+            name: "chat", dependencies: ["Stipple"], path: "Examples/Chat", swiftSettings: strictSettings),
         .testTarget(
             name: "StippleTests",
             dependencies: ["Stipple"],

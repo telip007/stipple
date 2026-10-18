@@ -3,7 +3,7 @@ extension Canvas {
     mutating func drawBorder(
         _ border: BorderStyle,
         in rect: Rect,
-        edges: BorderStyle.Edges = .all,
+        edges: Edge.Set = .all,
         style: Style,
         clip: Rect? = nil,
     ) {
@@ -18,13 +18,13 @@ extension Canvas {
     mutating func drawBorder(
         _ border: BorderStyle,
         in rect: Rect,
-        edges: BorderStyle.Edges = .all,
+        edges: Edge.Set = .all,
         colors: BorderStyle.Colors,
         clip: Rect? = nil,
     ) {
         guard !rect.isEmpty else { return }
-        let hasLeft = edges.contains(.left)
-        let hasRight = edges.contains(.right)
+        let hasLeft = edges.contains(.leading)
+        let hasRight = edges.contains(.trailing)
         let inner = max(0, rect.size.width - (hasLeft ? 1 : 0) - (hasRight ? 1 : 0))
         func horizontal(_ corners: (Character, Character), _ edge: Character) -> String {
             (hasLeft ? String(corners.0) : "") + String(repeating: edge, count: inner)

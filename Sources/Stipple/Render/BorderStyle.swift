@@ -38,28 +38,6 @@ public struct BorderStyle: Hashable, Sendable {
         self.bottomRight = bottomRight
     }
 
-    /// Which sides of a border are drawn. These are physical sides, not layout directions.
-    public struct Edges: OptionSet, Hashable, Sendable {
-        /// The raw bit mask.
-        public let rawValue: UInt8
-
-        /// Creates edges from a raw bit mask.
-        public init(rawValue: UInt8) {
-            self.rawValue = rawValue
-        }
-
-        /// The top side.
-        public static let top = Self(rawValue: 1 << 0)
-        /// The left side.
-        public static let left = Self(rawValue: 1 << 1)
-        /// The bottom side.
-        public static let bottom = Self(rawValue: 1 << 2)
-        /// The right side.
-        public static let right = Self(rawValue: 1 << 3)
-        /// All four sides.
-        public static let all: Self = [.top, .left, .bottom, .right]
-    }
-
     /// The style each side is drawn in. Corners take the style of their horizontal side.
     public struct Colors: Hashable, Sendable {
         /// Style of the top side and its corners.

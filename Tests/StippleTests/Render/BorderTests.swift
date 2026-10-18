@@ -7,7 +7,7 @@ import Testing
         _ border: BorderStyle,
         _ width: Int,
         _ height: Int,
-        edges: BorderStyle.Edges = .all,
+        edges: Edge.Set = .all,
     ) -> [String] {
         var canvas = Canvas(width: width, height: height)
         canvas.drawBorder(border, in: canvas.bounds, edges: edges, style: .plain)
@@ -37,9 +37,9 @@ import Testing
 
     @Test func hiddenSidesDropTheirCorners() {
         #expect(draw(.single, 5, 3, edges: [.top, .bottom]) == ["─────", "     ", "─────"])
-        #expect(draw(.single, 5, 3, edges: [.left, .right]) == ["│   │", "│   │", "│   │"])
-        #expect(draw(.single, 5, 3, edges: [.top, .right, .bottom]) == ["────┐", "    │", "────┘"])
-        #expect(draw(.single, 5, 3, edges: [.top, .left]) == ["┌────", "│    ", "│    "])
+        #expect(draw(.single, 5, 3, edges: [.leading, .trailing]) == ["│   │", "│   │", "│   │"])
+        #expect(draw(.single, 5, 3, edges: [.top, .trailing, .bottom]) == ["────┐", "    │", "────┘"])
+        #expect(draw(.single, 5, 3, edges: [.top, .leading]) == ["┌────", "│    ", "│    "])
         #expect(draw(.single, 5, 3, edges: []) == ["     ", "     ", "     "])
     }
 
