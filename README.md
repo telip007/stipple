@@ -129,6 +129,7 @@ from separate packages:
 | `ProgressView()`, `ProgressView("Loading")` | Spinner (`.progressViewStyle(.dots / .line / .arc)`) | ink-spinner |
 | `ProgressView(value: 0.4)` | Progress bar that fills the offered width | ink-progress-bar |
 | `SelectionList(items, selection: $selected) { … }` | Arrow-key list with scrolling and Enter to submit | ink-select-input |
+| `ScrollView { … }` | Vertical scrolling with a scroll indicator, `.scrollPosition($position)`, `.defaultScrollAnchor(.bottom)` for chat-style pinning, Page Up/Down and the mouse wheel | |
 | `Divider()` | A line across the enclosing stack | |
 
 ```swift
@@ -155,6 +156,29 @@ struct Login: View {
 }
 ```
 
+A transcript that follows new messages while you are at the bottom, and stays
+put when you scroll up to read:
+
+```swift
+struct Transcript: View {
+    let messages: [String]
+    @State private var position = ScrollPosition(edge: .bottom)
+
+    var body: some View {
+        ScrollView {
+            ForEach(messages, id: \.self) { Text($0) }
+        }
+        .defaultScrollAnchor(.bottom)
+        .scrollPosition($position)
+        .scrollOnPageKeys()
+    }
+}
+```
+
+`position.edge == .bottom` says whether it is pinned, and
+`position.scrollTo(edge: .bottom)` jumps back. Turn on
+`RenderOptions.mouseReporting` for the mouse wheel and `.onTapGesture`.
+
 ## Coming from Ink
 
 | Ink | Stipple |
@@ -179,8 +203,16 @@ Stipple mirrors SwiftUI's names and layout model, with these differences:
 
 - **Cells, not points.** One unit is one terminal cell. Sizes, padding and
   spacing are whole numbers of columns and rows.
-- **No gestures.** Input is the keyboard (`onKeyPress`, `onPaste`) and pasted
-  text. Mouse input is not supported.
+- **Keyboard first, mouse opt-in.** Input is the keyboard (`onKeyPress`,
+  `onPaste`) and pasted text. With `RenderOptions.mouseReporting` the wheel
+  scrolls the `ScrollView` under the pointer and `.onTapGesture` sees clicks
+  (on the alternate screen); other gestures don't exist. While it is on,
+  terminals need Shift (Option in some macOS terminals) held to select text.
+- **Scrolling is vertical and row-based.** `ScrollView` scrolls by rows;
+  `ScrollPosition` takes `scrollTo(edge:)`, `scrollTo(y:)`, `scrollTo(id:)` and
+  `scrollBy(lines:)`. A position at an edge stays there as content grows.
+  Scroll views take ↑/↓, Page Up/Down and Home/End while focus is in or on
+  them; `.scrollOnPageKeys()` lets Page Up/Down through from elsewhere.
 - **Focus moves with Tab and Shift-Tab.** `.focusable()` views join the cycle;
   `@FocusState` reads and sets it.
 - **Inline by default.** The view renders below the shell prompt and leaves its

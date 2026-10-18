@@ -48,4 +48,7 @@ struct ChildView {
     var view: any View
     /// The environment the child sees.
     var environment: EnvironmentValues
+    /// Whether `id` is an id the app chose (`ForEach`), which
+    /// `ScrollPosition.scrollTo(id:)` can find, rather than an internal one.
+    var isAppID = false
 }

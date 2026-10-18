@@ -70,3 +70,6 @@ Ctrl-D still deletes forward, but on an empty field it is `.ignored`, so ancesto
 
 ## [2026-10-18] update | TextField caret after outside changes
 Clearing a field's text from outside (e.g. in `onSubmit`) left the stale insertion point, so the caret showed on the placeholder's 4th character. The field now tracks the text of its own last edit and moves the insertion point to the end after any outside change; the placeholder caret is always on its first character.
+
+## [2026-10-18] update | ScrollView and mouse wheel
+Added `ScrollView`, `ScrollPosition`, `.scrollPosition`, `.defaultScrollAnchor(_:for:)`, `.scrollIndicators`, `.scrollOnPageKeys`, `.id`, `UnitPoint` and `Axis.Set` ([decision 0008](decisions/0008-scrolling-and-mouse.md)). Scroll views take keys near focus as a separate dispatch stage. `RenderOptions.mouseReporting` turns on `?1000`/`?1006`; the parser decodes SGR and X10 reports, the wheel scrolls the scroll view under the pointer, and `.onTapGesture` handles clicks on the alternate screen.

@@ -16,6 +16,8 @@ protocol TerminalHost: TerminalOutput {
     func events() -> AsyncStream<TerminalEvent>
     /// Turns bracketed paste on or off.
     func setBracketedPaste(_ enabled: Bool)
+    /// Turns mouse button and wheel reporting on or off.
+    func setMouseReporting(_ enabled: Bool)
     /// Pushes kitty keyboard flags.
     func pushKittyKeyboard(_ flags: KittyKeyboardFlags)
     /// Asks whether the terminal supports the kitty keyboard protocol.

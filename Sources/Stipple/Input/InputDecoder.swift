@@ -18,6 +18,8 @@ enum InputBytes {
     static let tilde = UInt8(ascii: "~")
     static let ss3 = UInt8(ascii: "O")
     static let kittyFinal = UInt8(ascii: "u")
+    /// `ESC [ M` starts an X10 mouse report.
+    static let x10Mouse = UInt8(ascii: "M")
     /// Bytes that identify the start of a bracketed paste marker.
     static let pasteStartPrefix: [UInt8] = Array("\u{1B}[200".utf8)
     /// The marker that ends a bracketed paste.

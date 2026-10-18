@@ -1,6 +1,6 @@
 ---
 title: Components
-summary: Built-in controls built only from Stipple's view API, starting with TextField and SecureField.
+summary: Built-in controls made only from the public view API: TextField and SecureField, ProgressView and SelectionList.
 updated: 2026-10-18
 ---
 
@@ -76,6 +76,10 @@ therefore needs no rebuild.
 editing model, the key mapping, the window and scroll rules, and the runtime
 behaviour: typing, submit, paste, focus through `.focusable` and `@FocusState`, the
 cursor position, and external changes to the bound text.
+
+`ScrollView` is not a component in this sense: it needs its own layout and
+input routing, so it is a primitive in `Views/`. See
+[View system: Scrolling](view-system.md#scrolling).
 
 ## ProgressView and SelectionList
 

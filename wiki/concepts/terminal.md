@@ -16,7 +16,7 @@ event, `signal-exit`) and adds the crash safety that Swift needs on top.
 | --- | --- |
 | [Terminal.swift](../../Sources/Stipple/Terminal/Terminal.swift) | `public final class Terminal: TerminalOutput` (`@MainActor`): size (`TIOCGWINSZ`, then `COLUMNS`/`LINES`, then 80×24), `isTerminal`, `isInputTerminal`, `isCI`, `isInteractive`, unbuffered `write`, raw mode and the mode switches |
 | [TTY.swift](../../Sources/Stipple/Terminal/TTY.swift) | Thin `termios`/`ioctl`/`write(2)` wrappers. Raw mode is `cfmakeraw` with `ONLCR` kept, so `\n` still returns the carriage |
-| [TerminalModes.swift](../../Sources/Stipple/Terminal/TerminalModes.swift) | Tracks which modes are on (alternate screen, hidden cursor, bracketed paste, focus reporting, kitty flag stack) and builds the exact sequence that undoes them |
+| [TerminalModes.swift](../../Sources/Stipple/Terminal/TerminalModes.swift) | Tracks which modes are on (alternate screen, hidden cursor, bracketed paste, focus reporting, mouse reporting, kitty flag stack) and builds the exact sequence that undoes them |
 | [Terminal+Events.swift](../../Sources/Stipple/Terminal/Terminal+Events.swift) | `events() -> AsyncStream<TerminalEvent>`: `.input([UInt8])` from a reader thread, `.resize(Size)` from a Dispatch `SIGWINCH` source, and a redraw after `SIGCONT` |
 | [InputReader.swift](../../Sources/Stipple/Terminal/InputReader.swift) | A blocking `read(2)` loop off the main thread, stopped through a self-pipe |
 | [Terminal+Suspend.swift](../../Sources/Stipple/Terminal/Terminal+Suspend.swift) | `suspend(_:)` hands the terminal to other code (modes off, cooked mode) and reclaims it afterwards. `suspendProcess()` does the same around `SIGTSTP` for Ctrl-Z |
@@ -51,6 +51,15 @@ echo and a hidden cursor.
   set again, and the output ended with `ESC[?2004l ESC[?25h`.
 
 ## Gotchas
+
+- **Mouse reporting is opt-in and steals text selection.** `setMouseReporting(true)`
+  writes `?1000h?1006h` (button and wheel reports, SGR encoding) and restore
+  writes `?1006l?1000l` before the screen modes, so crash recovery, Ctrl-Z and
+  `suspend(_:)` undo it like every other mode. While it is on, a plain drag
+  goes to the app; users hold Shift (Option in some macOS terminals) to select
+  text. That is why `RenderOptions.mouseReporting` defaults to off. Only
+  `?1000` is used: no drag (`?1002`) or motion (`?1003`) reports, so the
+  terminal doesn't flood stdin.
 
 - The frame writer, not `Terminal`, switches the alternate screen and hides the
   cursor. The runtime reports those modes with `noteModes(alternateScreen:cursorHidden:)`

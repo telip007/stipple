@@ -39,6 +39,22 @@ private func runCounter() async throws {
     try await Stipple.run(Counter())
 }
 
+// MARK: Components: scrolling
+
+private struct Transcript: View {
+    let messages: [String]
+    @State private var position = ScrollPosition(edge: .bottom)
+
+    var body: some View {
+        ScrollView {
+            ForEach(messages, id: \.self) { Text($0) }
+        }
+        .defaultScrollAnchor(.bottom)
+        .scrollPosition($position)
+        .scrollOnPageKeys()
+    }
+}
+
 @MainActor
 struct ReadmeExampleTests {
     private func plain(_ view: some View, width: Int = 40) -> String {
@@ -91,4 +107,12 @@ private struct Login: View {
     let output = Stipple.renderToString(Login(), width: 40)
     #expect(output.contains("User:"))
     #expect(output.contains("Password:"))
+}
+
+@MainActor
+@Test func readmeTranscriptShowsTheNewestMessages() {
+    let view = Transcript(messages: (1...10).map { "message \($0)" }).frame(height: 2)
+    let output = Stipple.renderToString(view, width: 20).replacing(/\u{1B}\[[0-9;]*m/, with: "")
+    #expect(output.hasPrefix("message 9"))
+    #expect(output.contains("message 10"))
 }

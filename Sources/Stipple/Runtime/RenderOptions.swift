@@ -26,6 +26,12 @@ public struct RenderOptions: Sendable {
     /// Force interactive (`true`) or plain (`false`) output. `nil` detects it:
     /// plain when stdout isn't a terminal or when running in CI.
     public var interactive: Bool?
+    /// Report mouse buttons and the wheel, so the wheel scrolls the
+    /// ``ScrollView`` under the pointer and ``View/onTapGesture(count:perform:)``
+    /// sees clicks. Off by default: while it is on, terminals pass mouse
+    /// drags to the app, so selecting text needs Shift (Option in some macOS
+    /// terminals) held while dragging.
+    public var mouseReporting = false
     /// The keyboard protocol to use.
     public var keyboardProtocol = KeyboardProtocol.legacy
     /// Turn on screen reader output. `nil` reads `STIPPLE_SCREEN_READER=true`.

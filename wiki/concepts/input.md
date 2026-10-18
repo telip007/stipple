@@ -1,6 +1,6 @@
 ---
 title: Input
-summary: How stdin bytes become key presses, pastes and focus events, including the kitty keyboard protocol.
+summary: How stdin bytes become key presses, pastes, focus and mouse events, including the kitty keyboard protocol.
 updated: 2026-10-18
 ---
 
@@ -68,6 +68,8 @@ Decoder layout: [`InputParser.swift`](../../Sources/Stipple/Input/InputParser.sw
 | `ESC [ 200~` … `ESC [ 201~` | `.paste(String)` |
 | `ESC [ I` / `ESC [ O` | `.focus(true)` / `.focus(false)` |
 | `ESC [ ? flags u` | `.kittyKeyboardSupported(flags:)` |
+| `ESC [ < b ; x ; y M` / `… m` | `.mouse`: SGR press / release, wheel when `b` has bit 64 (`64` up, `65` down, `66`/`67` left/right), movement with bit 32; Shift 4, Option 8, Control 16; `x`, `y` from 1 become a zero-based `Point` |
+| `ESC [ M b x y` (3 raw bytes, each + 32) | `.mouse`: the older X10 encoding, for terminals without `?1006`; release doesn't say which button |
 | `ESC [ code u` | the key for the codepoint (see below) |
 | `ESC [ code ; mods:event u` | the same, with modifiers and phase |
 | `ESC [ 1 ; mods:event A`–`D`, `ESC [ n ; mods:event ~` | functional keys with a phase |
@@ -109,6 +111,13 @@ The `:event` part is 1 for press, 2 for repeat and 3 for release. It maps to
 
 ## Gotchas
 
+- **Mouse reports are internal.** `MouseEvent` ([MouseEvent.swift](../../Sources/Stipple/Input/MouseEvent.swift))
+  is not public; apps see the wheel through `ScrollView` and clicks through
+  `.onTapGesture`. Extra buttons (codes from 128) and malformed reports are
+  dropped. An SGR report split across reads waits like any CSI.
+- **`ESC [ M` always starts an X10 report**, whether or not mouse reporting is
+  on, and swallows the next three bytes. No key sends a bare `CSI M`.
+
 - **No implicit Shift from kitty text.** With Caps Lock on, kitty can report `A`
   without Shift. The key is then `.character("a")` with no `.shift`, as Ink does.
 - **Uppercase letters need no kitty protocol.** A legacy `A` is `.character("a")`
@@ -144,7 +153,7 @@ The `:event` part is 1 for press, 2 for repeat and 3 for release. It maps to
 ## Tests
 
 [`Tests/StippleTests/Input/`](../../Tests/StippleTests/Input/) covers the byte table
-above, buffering across chunks, paste spanning chunks, invalid UTF-8, and the
+above (mouse reports in `MouseInputTests`), buffering across chunks, paste spanning chunks, invalid UTF-8, and the
 kitty codepoint and modifier rules. The tests are the parsing assertions from
 Ink's `parse-keypress`, `input-parser`, `kitty-keyboard` and `use-input` tests,
 restated for this API.

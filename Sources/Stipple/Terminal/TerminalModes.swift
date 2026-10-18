@@ -8,6 +8,9 @@ enum TerminalSequence {
     static let bracketedPasteOff = "\u{1B}[?2004l"
     static let focusReportingOn = "\u{1B}[?1004h"
     static let focusReportingOff = "\u{1B}[?1004l"
+    /// Button and wheel reports (`?1000`) in SGR encoding (`?1006`).
+    static let mouseReportingOn = "\u{1B}[?1000h\u{1B}[?1006h"
+    static let mouseReportingOff = "\u{1B}[?1006l\u{1B}[?1000l"
     static let kittyKeyboardPop = "\u{1B}[<u"
     static let kittyKeyboardQuery = "\u{1B}[?u"
 
@@ -23,6 +26,7 @@ struct TerminalModes: Equatable, Sendable {
     var cursorHidden = false
     var bracketedPaste = false
     var focusReporting = false
+    var mouseReporting = false
     /// One entry per pushed flag set, bottom first.
     var kittyKeyboard: [KittyKeyboardFlags] = []
 
@@ -35,6 +39,7 @@ struct TerminalModes: Equatable, Sendable {
         if cursorHidden { out += TerminalSequence.cursorHide }
         if bracketedPaste { out += TerminalSequence.bracketedPasteOn }
         if focusReporting { out += TerminalSequence.focusReportingOn }
+        if mouseReporting { out += TerminalSequence.mouseReportingOn }
         for flags in kittyKeyboard { out += TerminalSequence.kittyKeyboardPush(flags) }
         return out
     }
@@ -42,6 +47,7 @@ struct TerminalModes: Equatable, Sendable {
     /// Switches every active mode off, in reverse order of `enterSequence`.
     var restoreSequence: String {
         var out = String(repeating: TerminalSequence.kittyKeyboardPop, count: kittyKeyboard.count)
+        if mouseReporting { out += TerminalSequence.mouseReportingOff }
         if focusReporting { out += TerminalSequence.focusReportingOff }
         if bracketedPaste { out += TerminalSequence.bracketedPasteOff }
         if cursorHidden { out += TerminalSequence.cursorShow }

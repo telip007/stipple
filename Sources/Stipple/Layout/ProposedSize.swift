@@ -49,6 +49,22 @@ public enum Axis: Hashable, Sendable {
     case horizontal
     /// Top to bottom.
     case vertical
+
+    /// A set of axes, as in SwiftUI.
+    public struct Set: OptionSet, Hashable, Sendable {
+        /// The raw bit mask.
+        public let rawValue: UInt8
+
+        /// Creates a set from a raw bit mask.
+        public init(rawValue: UInt8) {
+            self.rawValue = rawValue
+        }
+
+        /// The horizontal axis.
+        public static let horizontal = Self(rawValue: 1 << 0)
+        /// The vertical axis.
+        public static let vertical = Self(rawValue: 1 << 1)
+    }
 }
 
 extension Size {

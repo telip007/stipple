@@ -150,6 +150,15 @@ public final class Terminal: TerminalOutput {
         switchMode(enabled ? TerminalSequence.focusReportingOn : TerminalSequence.focusReportingOff)
     }
 
+    /// Turns mouse reporting on or off: button presses, releases and the
+    /// wheel (`?1000`), in SGR encoding (`?1006`). While it is on, most
+    /// terminals select text only with Shift (or Option on macOS) held.
+    public func setMouseReporting(_ enabled: Bool) {
+        guard modes.mouseReporting != enabled else { return }
+        modes.mouseReporting = enabled
+        switchMode(enabled ? TerminalSequence.mouseReportingOn : TerminalSequence.mouseReportingOff)
+    }
+
     /// Pushes kitty keyboard protocol flags (`CSI > flags u`). Pair it with ``popKittyKeyboard()``.
     public func pushKittyKeyboard(_ flags: KittyKeyboardFlags) {
         modes.kittyKeyboard.append(flags)

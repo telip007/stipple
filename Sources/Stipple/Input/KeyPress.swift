@@ -115,4 +115,6 @@ enum InputEvent: Hashable, Sendable {
     case focus(Bool)
     /// The terminal answered the kitty keyboard query (`CSI ? flags u`).
     case kittyKeyboardSupported(flags: Int)
+    /// A mouse button, movement or wheel report (mouse reporting mode).
+    case mouse(MouseEvent)
 }

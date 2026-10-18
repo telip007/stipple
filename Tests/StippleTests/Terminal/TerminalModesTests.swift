@@ -35,6 +35,12 @@ struct TerminalModesTests {
         #expect(TerminalModes().enterSequence.isEmpty)
     }
 
+    @Test func mouseReportingIsSwitchedOffBeforeTheScreen() {
+        let modes = TerminalModes(alternateScreen: true, mouseReporting: true)
+        #expect(modes.enterSequence == "\u{1B}[?1049h\u{1B}[?1000h\u{1B}[?1006h")
+        #expect(modes.restoreSequence == "\u{1B}[?1006l\u{1B}[?1000l\u{1B}[?1049l")
+    }
+
     @Test func dimensionParsing() {
         #expect(TerminalEnvironment.dimension(["A": "12"], "A") == 12)
         #expect(TerminalEnvironment.dimension(["A": "0"], "A") == nil)

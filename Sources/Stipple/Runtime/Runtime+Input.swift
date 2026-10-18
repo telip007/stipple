@@ -12,6 +12,8 @@ extension Runtime {
             if options.keyboardProtocol == .automatic {
                 terminal.pushKittyKeyboard(KittyKeyboardFlags.disambiguateEscapeCodes)
             }
+        case .mouse(let event):
+            handleMouse(event)
         }
     }
 
@@ -67,7 +69,10 @@ extension Runtime {
 }
 
 extension ViewGraph {
-    /// Key handlers that may see a press, in dispatch order.
+    /// Key handlers that may see a press, in dispatch order: the focused
+    /// path (innermost first), scroll views in or around focus, global
+    /// handlers in tree order, then scroll views that take Page Up and Page
+    /// Down while focus is elsewhere.
     func keyHandlers() -> [@MainActor (KeyPress) -> KeyPress.Result] {
         guard let root else { return [] }
         var focusedPath: [ViewNode] = []
@@ -80,7 +85,30 @@ extension ViewGraph {
         let global = Self.globalNodes(in: root, insideFocusable: false).filter { node in
             !focusedPath.contains { $0 === node }
         }
-        return scoped + global.flatMap(\.behaviors.keyHandlers)
+        let scrollViews = Self.allNodes(in: root).filter { $0.behaviors.scroll != nil }
+        let focused = scrollViews.filter(isScrollFocused).reversed().compactMap(\.behaviors.scroll)
+        let unfocused = scrollViews.filter { !isScrollFocused($0) }.compactMap(\.behaviors.scroll)
+            .filter(\.scrollsOnPageKeys)
+        let focusedHandlers = focused.map { scroll -> @MainActor (KeyPress) -> KeyPress.Result in
+            { press in scroll.handleKey(press, focused: true) }
+        }
+        let pageHandlers = unfocused.map { scroll -> @MainActor (KeyPress) -> KeyPress.Result in
+            { press in scroll.handleKey(press, focused: false) }
+        }
+        return scoped + focusedHandlers + global.flatMap(\.behaviors.keyHandlers) + pageHandlers
+    }
+
+    /// Whether a scroll view takes focus keys: focus is inside it, or on
+    /// the nearest focusable view around it (`ScrollView { … }.focusable()`).
+    func isScrollFocused(_ node: ViewNode) -> Bool {
+        guard let focused = focus.focusedNode else { return false }
+        if focus.containsFocus(node) { return true }
+        var current: ViewNode? = node
+        while let candidate = current {
+            if candidate.behaviors.focus != nil { return candidate === focused }
+            current = candidate.parent
+        }
+        return false
     }
 
     /// Paste handlers that may see a paste: focused path plus global ones.

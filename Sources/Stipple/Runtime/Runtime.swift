@@ -18,7 +18,9 @@ final class Runtime {
     private var exitWaiters: [CheckedContinuation<Void, any Error>] = []
     private var exitResult: Result<Void, any Error>?
     private var isSuspended = false
-    private let clock = ContinuousClock()
+    let clock = ContinuousClock()
+    /// The pressed view and the last clicks, to recognise taps.
+    var clicks = ClickTracker()
 
     init(view: some View, options: RenderOptions, terminal: any TerminalHost) {
         self.terminal = terminal
@@ -56,6 +58,7 @@ final class Runtime {
         }
         if interactive, terminal.isInputTerminal, terminal.enableRawMode() {
             terminal.setBracketedPaste(true)
+            if options.mouseReporting { terminal.setMouseReporting(true) }
             configureKeyboard()
         }
         graph.mount(AnyView(rootView), environment: makeEnvironment())

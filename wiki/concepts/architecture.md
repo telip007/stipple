@@ -50,7 +50,8 @@ Port of Ink's stdin/stdout handling plus the crash safety Node gives Ink for fre
   `TerminalEvent = .input([UInt8]) | .resize(Size)`. Resize comes from `SIGWINCH`
   through a Dispatch signal source; stdin is read off the main thread.
 - Mode switches that write escape sequences: alternate screen (`?1049`), cursor
-  visibility (`?25`), bracketed paste (`?2004`), focus reporting (`?1004`), kitty
+  visibility (`?25`), bracketed paste (`?2004`), focus reporting (`?1004`),
+  mouse reporting (`?1000` + SGR `?1006`, opt-in), kitty
   keyboard push/pop/query (`CSI > flags u`, `CSI < u`, `CSI ? u`). Synchronized
   output (`?2026`) is handled by the frame writer.
 - Environment detection: `isCI` (`CI`, `CONTINUOUS_INTEGRATION`, `BUILD_NUMBER`,
@@ -70,7 +71,8 @@ Port of `parse-keypress.ts`, `input-parser.ts` and `kitty-keyboard.ts`.
   `CSI 1;m X`), Ctrl-letter (`0x01…0x1A`), Option as an ESC prefix, Backspace
   `0x7F`/`0x08`, keypad Enter, bracketed paste (`ESC[200~ … ESC[201~` →
   `.paste`), focus in/out, kitty `CSI codepoint;mods:event u` with press, repeat
-  and release, and the kitty query reply.
+  and release, the kitty query reply, and mouse reports (SGR `CSI < b;x;y M/m`
+  and X10 `CSI M bxy`) as `.mouse`.
 - UTF-8 multi-byte characters and grapheme clusters arrive as one `.character`.
 
 ### Render/ ([page](rendering.md))
@@ -131,7 +133,8 @@ Port of `log-update.ts`, `line-update.ts`, `cursor-helpers.ts`,
 
 These modules are the SwiftUI-shaped core: `View`, `@ViewBuilder`, `ViewGraph`,
 `@State`, `@Binding`, `@Environment`, `@FocusState`, `Observation` tracking,
-the layout protocol and stacks, modifiers, `Static`, the render loop with
+the layout protocol and stacks, modifiers, `Static`, `ScrollView` with
+`ScrollPosition`, key and mouse routing, the render loop with
 `maxFps` throttling, and `Stipple.run` / `Stipple.render` /
 `Stipple.renderToString`.
 
@@ -148,6 +151,8 @@ the layout protocol and stacks, modifiers, `Static`, the render loop with
 | `borderStyle`, `borderColor` | `.border(.rounded, color: .cyan)` |
 | `backgroundColor` | `.background(.blue)` |
 | `overflow="hidden"` | `.clipped()` |
+| (no Ink equivalent) | `ScrollView { }`, `.scrollPosition($position)`, `.defaultScrollAnchor(.bottom)`, `.scrollIndicators(_:)`, `.scrollOnPageKeys()`, `.id(_:)` |
+| (no Ink equivalent) | `RenderOptions.mouseReporting`, `.onTapGesture(count:perform:)` |
 | `position="absolute"` | `.overlay(alignment:) { }`, `.background(alignment:) { }`, `ZStack` |
 | `<Text color bold …>` | `Text("…").foregroundStyle(.green).bold().italic().underline().strikethrough().dim().inverse()` |
 | `wrap="truncate-end"` | `.textWrapping(.truncate).truncationMode(.tail)`: each line cut on its own. `.lineLimit(1)` keeps only the first line, as in SwiftUI |

@@ -18,7 +18,9 @@ public struct ForEach<Data: RandomAccessCollection, ID: Hashable, Content: View>
     public typealias Body = Never
 
     func update(_ node: ViewNode) -> [ChildView] {
-        data.map { ChildView(id: AnyHashable($0[keyPath: id]), view: content($0), environment: node.environment) }
+        data.map {
+            ChildView(id: AnyHashable($0[keyPath: id]), view: content($0), environment: node.environment, isAppID: true)
+        }
     }
 }
 

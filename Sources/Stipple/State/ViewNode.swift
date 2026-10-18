@@ -22,6 +22,8 @@ final class ViewNode {
     var layout: (any NodeLayout)?
     /// Set by `.layoutPriority(_:)`; read by stacks.
     var layoutPriority = 0.0
+    /// The id the app gave this view (`.id(_:)` or `ForEach`), for `ScrollPosition.scrollTo(id:)`.
+    var appID: AnyHashable?
     /// Key, paste and lifecycle behaviour attached by modifiers.
     var behaviors = NodeBehaviors()
     /// Where the node was placed in the last layout pass.
@@ -113,6 +115,7 @@ final class ViewNode {
                 graph.mounted(child)
                 child.rebuild()
             }
+            if spec.isAppID { child.appID = spec.id }
             newChildren.append(child)
             newKeys.append(key)
         }

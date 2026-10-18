@@ -49,6 +49,8 @@ extension InputDecoder {
             if index == payload, byte == InputBytes.bracket {
                 // Legacy Linux console keys are `ESC [ [ A` to `ESC [ [ E`.
                 index += 1
+            } else if index == payload, byte == InputBytes.x10Mouse {
+                return x10MouseToken(in: input, at: start)
             } else if isRxvtShift(in: input, payload: payload, index: index) || isCSIFinal(byte) {
                 return csiSequence(in: input, start: start, end: index + 1)
             } else if isCSIParameter(byte) || isCSIIntermediate(byte) {
@@ -85,7 +87,16 @@ extension InputDecoder {
         if body == "200", final == InputBytes.tilde {
             return .pasteStart(length: length)
         }
+        if body.first == "<", final == UInt8(ascii: "M") || final == UInt8(ascii: "m") {
+            return .consumed(length: length, events: MouseReports.sgrEvents(body: body.dropFirst(), final: final))
+        }
         return .consumed(length: length, events: LegacyKeys.csiEvents(body: body, final: final))
+    }
+
+    /// Decodes an X10 mouse report, `ESC [ M` and three raw bytes.
+    static func x10MouseToken(in input: [UInt8], at start: Int) -> InputToken {
+        guard start + 6 <= input.count else { return .incomplete }
+        return .consumed(length: 6, events: MouseReports.x10Events(Array(input[(start + 3)..<(start + 6)])))
     }
 
     /// rxvt shifted editing keys end in `$`, which is an intermediate byte, so they end the CSI early.

@@ -1,6 +1,6 @@
 ---
 title: View system
-summary: View, ViewBuilder, the view graph, state, environment, layout, modifiers and the render loop.
+summary: View, ViewBuilder, the view graph, state, environment, layout, modifiers, scrolling, mouse routing and the render loop.
 updated: 2026-10-18
 ---
 
@@ -75,6 +75,62 @@ SwiftUI's two-pass model ([decision 0002](../decisions/0002-two-pass-layout.md))
   invalidates itself if the size changed. The runtime repeats the
   flush, layout and geometry-callback loop up to four times per frame.
 
+## Scrolling
+
+`ScrollView` ([ScrollView.swift](../../Sources/Stipple/Views/ScrollView.swift))
+is a primitive whose node keeps a `ScrollState` (offset and the measurements
+of the last layout) in node storage. `ScrollPosition` and the scroll
+modifiers are in [ScrollPosition.swift](../../Sources/Stipple/Views/ScrollPosition.swift)
+([decision 0008](../decisions/0008-scrolling-and-mouse.md)).
+
+- **Layout.** It takes the proposed height as its viewport and the proposed
+  width (fully flexible both ways, like SwiftUI's); with no proposed height it
+  is as tall as its content, so inline output shows everything unless a
+  frame limits it. The content is laid out at the viewport width with height
+  `nil` (its ideal height), placed `offset` rows above the viewport's top, and
+  its children draw with the clip narrowed to the viewport.
+- **Indicator.** `.automatic` (the default) measures the content at full width;
+  if it overflows, the content gets one column less and the last column draws
+  `┃` for the thumb and a dim `│` for the track. `.visible` always takes the
+  column, `.hidden`/`.never` never do.
+- **Resolving the offset**, on every placement: an `.edge` target gives 0 or the
+  maximum, `.y` is clamped, `.id` places the content once at offset 0, finds
+  the node whose `appID` matches (set by `.id(_:)` and on `ForEach` children)
+  and scrolls just enough to show its frame (`layoutFrame`, the union of the
+  layout children's frames for transparent nodes). With no target the
+  default anchors decide: `.initialOffset` on the first layout, then
+  `.sizeChanges` shifts the offset by `anchor.y × Δmax`, so `.bottom` keeps the
+  distance to the bottom. `.alignment` positions content shorter than the
+  viewport. `scrollBy(lines:)` adds its delta once and the view writes back
+  the resting position.
+- **Writing back.** Keys and the wheel call `ScrollState.scrollByUser(to:)`,
+  which clamps, stores `ScrollPosition.resting(at:…)` (edge at either end,
+  otherwise `.y`) with `isPositionedByUser`, and schedules a frame without
+  rebuilding the subtree. A bound position is read at layout time inside
+  `withObservationTracking`, so the app setting it schedules a frame even when
+  no body reads it. One observation is kept at a time; the flag clears in
+  the change callback.
+- **Keys** ([Runtime+Input.swift](../../Sources/Stipple/Runtime/Runtime+Input.swift)).
+  Scroll views are a separate dispatch stage, not ordinary key handlers: after
+  the focused path, the scroll views that contain the focused node, or whose
+  nearest focusable ancestor is the focused node (`ScrollView { }.focusable()`),
+  innermost first, take ↑/↓, Page Up/Down and Home/End without modifiers.
+  Then the global handlers run. Last, scroll views with
+  `.scrollOnPageKeys()` take Page Up/Down. A text field elsewhere therefore
+  keeps its arrows and Home/End.
+- **Mouse** ([Runtime+Mouse.swift](../../Sources/Stipple/Runtime/Runtime+Mouse.swift)).
+  On the alternate screen the frame starts at row 0, so a report's cell is a
+  frame coordinate. `ViewGraph.nodes(at:in:)` walks the tree with the same
+  clips as drawing and returns the nodes with a layout whose visible part
+  contains the point, topmost first. A wheel notch scrolls 3 rows in the first
+  scroll view of that list that can move (so an inner view at its end lets the
+  outer one scroll). Inline, the frame's screen row is unknown, so the wheel
+  goes to scroll views around focus, then the innermost one in tree order.
+  Taps: a left press records the innermost node with tap handlers; the
+  release must hit the same node. Clicks on the same cell within 500 ms form
+  a series, and for each count the innermost handler on the path up from the
+  pressed node runs when the series length is a multiple of its count.
+
 ## Runtime
 
 `Runtime` ([Runtime.swift](../../Sources/Stipple/Runtime/Runtime.swift)) wires the
@@ -85,7 +141,10 @@ pieces together in the same order as Ink's `ink.tsx` and `App.tsx`:
    events. A pending lone ESC is flushed after 50 ms.
 3. Keys: Ctrl-C exits (`exitOnCtrlC`). Tab and Shift-Tab move focus and Escape
    blurs it. The press then goes to handlers on the focused path (innermost
-   first), then to global handlers (outside any `.focusable()`) in tree order, until one returns `.handled`.
+   first), scroll views in or around focus, global handlers (outside any
+   `.focusable()`) in tree order, and scroll views with `.scrollOnPageKeys()`,
+   until one returns `.handled`. Mouse reports (with `RenderOptions.mouseReporting`)
+   go to `handleMouse` ([Scrolling](#scrolling)).
 4. Rendering is throttled to `maxFps` on the leading and trailing edge, and a
    `Task.yield()` batches changes made in the same turn. Each frame flushes
    the graph, collects `Static` output, lays out at the terminal width (height
@@ -104,6 +163,22 @@ Ink keeps every `aria-*` prop on one element.
 (`Tests/StippleTests/Runtime/FakeTerminal.swift`).
 
 ## Gotchas
+
+- **Reading a binding in a primitive's `update` isn't tracked.** Only composite
+  bodies (and custom modifiers) run inside `withObservationTracking`. A
+  primitive that must react to a binding the app sets, as `ScrollView` does
+  with its position, has to track the read itself.
+- **Write-backs during layout re-run the frame loop.** `scrollBy(lines:)` is
+  resolved at placement and stores the new position into the binding; any
+  body that reads it is invalidated, and `hasPendingWork` makes the runtime
+  (and `renderToString`) lay out again. Write only when the value changes, or
+  the loop never settles.
+- **`.id(_:)` is transparent.** It must not get a layout: a `PassThroughLayout`
+  would stack a multi-view body vertically even inside an `HStack`. Its frame
+  for `scrollTo(id:)` is the union of its layout children's frames.
+- **A ScrollView offered `.infinity` height answers `.infinity`.** That makes it
+  the most flexible child of a stack, so it takes the space left after
+  headers and inputs, as in SwiftUI.
 
 - **`@FocusState var x: Bool` needs `= false`.** Swift only default-initializes a
   property wrapper through `init(wrappedValue:)` (for optionals, with `nil`) or an

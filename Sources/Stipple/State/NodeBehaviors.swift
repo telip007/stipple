@@ -26,10 +26,14 @@ struct NodeBehaviors {
     var geometryChange: [@MainActor (Rect) -> Void] = []
     var cursorPosition: Point?
     var accessibility = AccessibilityInfo()
+    /// Set on a `ScrollView`'s node.
+    var scroll: ScrollRegistration?
+    /// Click handlers from `.onTapGesture`, with the click count each one wants.
+    var tapHandlers: [(count: Int, action: @MainActor () -> Void)] = []
 
     var isEmpty: Bool {
         keyHandlers.isEmpty && pasteHandlers.isEmpty && onAppear.isEmpty && onDisappear.isEmpty && tasks.isEmpty
-            && focus == nil && geometryChange.isEmpty && cursorPosition == nil
+            && focus == nil && geometryChange.isEmpty && cursorPosition == nil && scroll == nil && tapHandlers.isEmpty
             && accessibility.label == nil && !accessibility.isHidden && accessibility.role == nil
     }
 }

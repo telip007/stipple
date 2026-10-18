@@ -136,4 +136,20 @@ struct TerminalTests {
         #expect(pty.read(until: "?25h") == "\u{1B}[?25l\u{1B}[?25h")
         #expect(terminal.modes.isEmpty)
     }
+
+    @Test func mouseReportingSwitchesOnceAndRestores() throws {
+        let pty = try PTY()
+        let terminal = pty.terminal()
+        terminal.setMouseReporting(false)
+        terminal.setMouseReporting(true)
+        terminal.setMouseReporting(true)
+        #expect(pty.read(until: "1006h") == "\u{1B}[?1000h\u{1B}[?1006h")
+        terminal.setMouseReporting(false)
+        #expect(pty.read(until: "1000l") == "\u{1B}[?1006l\u{1B}[?1000l")
+        terminal.setMouseReporting(true)
+        _ = pty.read(until: "1006h")
+        terminal.restore()
+        #expect(pty.read(until: "1000l") == "\u{1B}[?1006l\u{1B}[?1000l")
+        #expect(terminal.modes.isEmpty)
+    }
 }
