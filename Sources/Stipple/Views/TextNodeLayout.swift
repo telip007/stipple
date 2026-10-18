@@ -32,6 +32,13 @@ struct TextNodeLayout: NodeLayout {
         case .truncate: wrapped = hardLines.map { TextLayout.truncate($0, width: width, mode: truncationMode) }
         }
         guard let lineLimit, wrapped.count > lineLimit, lineLimit > 0 else { return wrapped }
+        if truncationMode == .head {
+            // As in SwiftUI, head truncation keeps the end of the text.
+            var kept = Array(wrapped.suffix(lineLimit))
+            kept[0] = TextLayout.truncate(
+                [StyledRun(text: "…", style: kept[0].first?.style ?? .plain)] + kept[0], width: width, mode: .head)
+            return kept
+        }
         var kept = Array(wrapped.prefix(lineLimit))
         kept[lineLimit - 1] = TextLayout.truncate(
             kept[lineLimit - 1] + [StyledRun(text: "…", style: kept[lineLimit - 1].last?.style ?? .plain)],

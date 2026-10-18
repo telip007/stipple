@@ -36,7 +36,9 @@ extension View {
         environmentChange { $0.textStyle.set(.inverse, isActive) }
     }
 
-    /// Limits text to `number` lines; the last line is truncated. `nil` removes the limit.
+    /// Limits text to `number` lines; the last line is truncated. With
+    /// `.truncationMode(.head)` the last `number` lines are kept instead and
+    /// the first of them is truncated, as in SwiftUI. `nil` removes the limit.
     public func lineLimit(_ number: Int?) -> some View {
         environmentChange { $0.lineLimit = number }
     }

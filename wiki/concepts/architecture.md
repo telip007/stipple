@@ -155,7 +155,7 @@ the layout protocol and stacks, modifiers, `Static`, `ScrollView` with
 | (no Ink equivalent) | `RenderOptions.mouseReporting`, `.onTapGesture(count:perform:)` |
 | `position="absolute"` | `.overlay(alignment:) { }`, `.background(alignment:) { }`, `ZStack` |
 | `<Text color bold …>` | `Text("…").foregroundStyle(.green).bold().italic().underline().strikethrough().dim().inverse()` |
-| `wrap="truncate-end"` | `.textWrapping(.truncate).truncationMode(.tail)`: each line cut on its own. `.lineLimit(1)` keeps only the first line, as in SwiftUI |
+| `wrap="truncate-end"` | `.textWrapping(.truncate).truncationMode(.tail)`: each line cut on its own. `.lineLimit(1)` keeps only the first line, as in SwiftUI. A larger limit keeps the first lines, or with `.truncationMode(.head)` the last ones (SwiftUI's head truncation shows the end of the text) |
 | `wrap="hard"` | `.textWrapping(.characters)` |
 | `<Newline/>` | `"\n"` inside `Text` |
 | `<Spacer/>` | `Spacer()` |

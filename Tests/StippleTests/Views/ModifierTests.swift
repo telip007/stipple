@@ -85,6 +85,20 @@ struct ModifierTests {
         #expect(plain(Text("one two three four").lineLimit(2), width: 8).split(separator: "\n").count == 2)
     }
 
+    @Test func headTruncationKeepsTheLastLines() {
+        func lines(_ view: some View, width: Int) -> [String] {
+            plain(view, width: width).split(separator: "\n").map {
+                String($0.drop { $0 == " " }.reversed().drop { $0 == " " }.reversed())
+            }
+        }
+        #expect(
+            lines(Text("one two three four five").lineLimit(2).truncationMode(.head), width: 10) == [
+                "…hree four", "five",
+            ])
+        #expect(lines(Text("a\nb\nc\nd").lineLimit(2).truncationMode(.head), width: 8) == ["…c", "d"])
+        #expect(lines(Text("a\nb").lineLimit(2).truncationMode(.head), width: 8) == ["a", "b"])
+    }
+
     @Test func multilineAlignment() {
         let view = Text("a\nbbb").multilineTextAlignment(.trailing)
         #expect(plain(view) == "  a\nbbb")

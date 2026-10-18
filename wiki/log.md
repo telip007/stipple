@@ -76,3 +76,6 @@ Added `ScrollView`, `ScrollPosition`, `.scrollPosition`, `.defaultScrollAnchor(_
 
 ## [2026-10-18] update | Clicks, focus on click and hover
 Under `RenderOptions.mouseReporting` on the alternate screen: a left press focuses the focusable view under the pointer, `SelectionList` rows select on click and submit on double-click, and `.onHover` reports the pointer through motion reports (`?1003`), which are on only while a hover handler exists. Tap and hover handlers no longer add a layout; hit-testing walks up from the innermost node.
+
+## [2026-10-18] update | Head truncation keeps the last lines
+`.lineLimit(n)` with `.truncationMode(.head)` now keeps the last `n` wrapped lines, with `…` at the start of the first, instead of the first `n`. It matches SwiftUI and lets a view show the live tail of growing text.
