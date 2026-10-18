@@ -12,6 +12,7 @@ Start here. Conventions: [SCHEMA.md](SCHEMA.md). Timeline: [log.md](log.md).
 - [View system](concepts/view-system.md): view, ViewBuilder, the view graph, state, environment, layout, modifiers and the render loop.
 - [Backpressure setup](concepts/backpressure-setup.md): every automated check in this repository, where it runs, and the traps hit while wiring it up.
 - [Testing](concepts/testing.md): how tests are structured, testing terminal code without a tty, README example tests and the coverage gate.
+- [Demos](concepts/demos.md): how the README GIFs, MP4s and screenshots are recorded with VHS from the examples, and how to re-record them.
 - [Releasing](concepts/releasing.md): Conventional Commits, release-please release PRs, SemVer bumps and Dependabot updates.
 - [Agent workflow](concepts/agent-workflow.md): how AGENTS.md, skills, hooks and the wiki make every agent session follow the same rules.
 

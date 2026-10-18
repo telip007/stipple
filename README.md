@@ -10,6 +10,10 @@ with the SwiftUI API you already know.
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="Apache 2.0"></a>
 </p>
 
+<p align="center">
+  <img src=".github/assets/demos/chat.gif" alt="A chat REPL built with Stipple: messages scroll into the terminal history while the input line stays live" width="720">
+</p>
+
 - **SwiftUI-shaped API:** `View`, `@ViewBuilder`, `VStack`/`HStack`, modifiers,
   `@State`, `@Environment`, `.onKeyPress`. No flexbox, no React.
 - **Ink's runtime behaviour:** inline rendering below the shell prompt, `Static`
@@ -51,10 +55,16 @@ struct Counter: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text("Count: \(count)").foregroundStyle(.green).bold()
-            Text("↑ increment, q quit").dim()
+            Text("↑/↓ change, q quit").dim()
         }
+        .padding(.horizontal, 1)
+        .border(.rounded, color: .cyan)
         .onKeyPress(.upArrow) {
             count += 1
+            return .handled
+        }
+        .onKeyPress(.downArrow) {
+            count -= 1
             return .handled
         }
         .onKeyPress("q") {
@@ -67,8 +77,46 @@ struct Counter: View {
 try await Stipple.run(Counter())
 ```
 
+<img src=".github/assets/demos/counter.png" alt="The counter example rendered in a terminal: a rounded cyan border around a green bold count" width="380">
+
 The examples in this README are compiled and run by
 `Tests/StippleTests/ReadmeExampleTests.swift`, so they cannot drift from the API.
+
+## Examples
+
+Three runnable examples live in [`Examples/`](Examples). Clone the repository and
+run them with `swift run <name>`. The recordings are scripted with
+[VHS](https://github.com/charmbracelet/vhs) (`make demos`).
+
+### Counter: state and key handling
+
+`swift run counter`
+
+<img src=".github/assets/demos/counter.gif" alt="Pressing the arrow keys changes the counter" width="380">
+
+[Watch in higher quality](.github/assets/demos/counter.mp4)
+
+### Tasks: `Static` scrollback and a spinner
+
+`swift run tasks`
+
+Finished tasks scroll into the terminal's history with `Static` while a
+`TimelineView` spinner shows the running one.
+
+<img src=".github/assets/demos/tasks.gif" alt="Eight tasks complete one after another, each leaving a check mark in the scrollback" width="380">
+
+[Watch in higher quality](.github/assets/demos/tasks.mp4) · [Still](.github/assets/demos/tasks.png)
+
+### Chat: a REPL with a live input line
+
+`swift run chat`
+
+Typed text, Enter to send, bracketed paste, and a cursor in the input box. Sent
+messages move into scrollback.
+
+<img src=".github/assets/demos/chat.gif" alt="Typing and pasting messages into the chat example" width="560">
+
+[Watch in higher quality](.github/assets/demos/chat.mp4) · [Still](.github/assets/demos/chat.png)
 
 ## Coming from Ink
 

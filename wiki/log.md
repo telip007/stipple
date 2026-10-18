@@ -37,3 +37,6 @@ Added `FrameWriterOptions.screenReader`: whole-frame rewrite, wrapped to the ter
 
 ## [2026-10-18] update | Divider, hidden, disabled; Linux green
 Added `Divider`, `.hidden()` and `.disabled(_:)` (handlers and focus respect `isEnabled`). The full suite passes on Linux (swift:6.2-noble) after fixing name-shadowing and import differences between Swift 6.2 and 6.4.
+
+## [2026-10-18] update | README demos and README example tests
+Scripted VHS tapes for the counter, tasks and chat examples record GIF, MP4 and PNG into `.github/assets/demos/` (`make demos`); README gets a hero GIF and an Examples section; `ReadmeExampleTests` compiles and renders the README's Swift snippet.

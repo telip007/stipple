@@ -24,7 +24,8 @@ Tests live in `Tests/StippleTests/`, one file per module area, mirroring
   ([decision 0002](../decisions/0002-two-pass-layout.md)).
 - **README examples are tests.** The code samples in the README are compiled and
   run by `Tests/StippleTests/ReadmeExampleTests.swift`, so documentation cannot
-  drift from the API. Change one, change the other.
+  drift from the API. Change one, change the other. The recorded demos
+  are separate ([Demos](demos.md)).
 
 ## Coverage
 
