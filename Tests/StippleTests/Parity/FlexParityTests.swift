@@ -145,4 +145,52 @@ struct FlexParityTests {
         #expect(plain(Text("Test").frame(width: 10, alignment: .top)) == "   Test")
         #expect(plain(Text("Test").frame(width: 10, alignment: .topTrailing)) == "      Test")
     }
+
+    // MARK: flex.tsx / flex-align-self.tsx
+
+    @Test func growEqually() {
+        let view = HStack(spacing: 0) {
+            Text("A").frame(maxWidth: .infinity, alignment: .leading)
+            Text("B").frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(width: 6, alignment: .topLeading)
+        #expect(plain(view) == "A  B")
+    }
+
+    @Test func growOneElement() {
+        let view = HStack(spacing: 0) {
+            Text("A").frame(maxWidth: .infinity, alignment: .leading)
+            Text("B")
+        }
+        .frame(width: 6, alignment: .topLeading)
+        #expect(plain(view) == "A    B")
+    }
+
+    @Test(.disabled("Fixed frames never shrink in a SwiftUI stack; Ink's flexShrink/flexBasis have no counterpart"))
+    func shrinkAndBasis() {}
+
+    @Test func alignSelfCenterAndEndInAColumn() {
+        let center = VStack(alignment: .center) { Text("Test") }.frame(width: 10, alignment: .topLeading)
+        #expect(plain(center) == "Test")
+        #expect(plain(Text("Test").frame(width: 10, alignment: .top)) == "   Test")
+        #expect(plain(Text("Test").frame(width: 10, alignment: .topTrailing)) == "      Test")
+    }
+
+    @Test func alignSelfStretchInAColumn() {
+        let view = Text("X").frame(maxWidth: .infinity, alignment: .leading).border().frame(
+            width: 7, alignment: .topLeading)
+        #expect(plain(view) == "┌─────┐\n│X    │\n└─────┘")
+    }
+
+    @Test func alignSelfStretchInARow() {
+        let view = Text("X").frame(maxHeight: .infinity, alignment: .topLeading).border().frame(
+            height: 5, alignment: .topLeading)
+        #expect(plain(view) == "┌─┐\n│X│\n│ │\n│ │\n└─┘")
+    }
+
+    @Test(.disabled("No baseline alignment (alignSelf=\"baseline\"); HStack has no .firstTextBaseline"))
+    func alignSelfBaseline() {}
+
+    @Test(.disabled("No flex-wrap equivalent; Ink flexWrap/alignContent tests have no SwiftUI counterpart"))
+    func wrapAndAlignContent() {}
 }
