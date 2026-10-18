@@ -13,3 +13,6 @@ README, NOTICE, CONTRIBUTING, SECURITY, CHANGELOG stub, CI and issue templates a
 
 ## [2026-10-18] update | Input module
 InputParser decodes stdin bytes into key, paste and focus events, with legacy, rxvt and kitty sequences and buffering across chunks. Ink deviations and gotchas are on the Input page.
+
+## [2026-10-18] update | Output module
+Ported log-update (standard and incremental), line-update, cursor-helpers, the frame logic from ink.tsx (debug, non-interactive, interactive, full clear, static output, alternate screen, writeAbove, resize, finish) into `Sources/Stipple/Output/`, with 67 byte-exact tests in `Tests/StippleTests/Output/`. Output page written with the escape table and gotchas.
