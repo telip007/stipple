@@ -47,3 +47,9 @@ volume for build artefacts. CI runs the same on Linux.
   minimal and async-signal-safe ([Architecture](architecture.md)).
 - The first Linux run is slow (toolchain image and build); later runs reuse the
   cached volume.
+
+## Timing-dependent tests
+
+Tests that wait for timers (TimelineView ticks, the 50 ms escape timeout,
+tasks) poll with `Runtime.waitUntil(timeout:_:)` instead of sleeping a fixed time.
+A fixed sleep passed locally but failed once in the pre-push Linux run under load.

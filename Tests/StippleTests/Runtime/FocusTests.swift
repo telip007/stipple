@@ -51,8 +51,7 @@ struct FocusTests {
         #expect(terminal.output.contains("> second"))
         // A lone ESC is only a key once the escape timeout passes without more bytes.
         runtime.handle(.input([0x1B]))
-        try await Task.sleep(for: .milliseconds(120))
-        await runtime.settle()
+        await runtime.waitUntil { runtime.graph.focus.focusedNode == nil }
         #expect(runtime.graph.focus.focusedNode == nil)
     }
 }

@@ -55,3 +55,6 @@ Added `ProgressView` (spinner with `ProgressViewStyle` presets dots, line and ar
 
 ## [2026-10-18] update | Components, examples and demos
 Merged TextField/SecureField, ProgressView and SelectionList. Setting `@FocusState` now moves focus even when no body reads it. renderToString repeats layout until geometry settles, and SelectionList honours `.onSubmit`. The chat and tasks examples use the components, and the demos were re-recorded (`make demos` builds each product separately).
+
+## [2026-10-18] update | Poll instead of sleeping in timing tests
+The first push was blocked by a flaky Linux test under load. Timer-based tests now poll with `Runtime.waitUntil`.

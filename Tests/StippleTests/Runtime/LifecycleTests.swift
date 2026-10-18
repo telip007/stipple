@@ -90,8 +90,7 @@ struct LifecycleTests {
             Text("frame \(context.frame) \(context.elapsed > .zero)")
         }
         let (runtime, terminal) = makeRuntime(view)
-        try await Task.sleep(for: .milliseconds(60))
-        await runtime.settle()
+        await runtime.waitUntil { terminal.output.contains("true") }
         #expect(terminal.output.contains("frame 0 false"))
         #expect(terminal.output.contains("true"))
     }

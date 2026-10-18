@@ -77,8 +77,7 @@ import Testing
         let style = ProgressViewStyle(frames: ["a", "b"], interval: .milliseconds(20))
         let (runtime, terminal) = makeRuntime(ProgressView().progressViewStyle(style))
         #expect(terminal.output.contains("a"))
-        try await Task.sleep(for: .milliseconds(120))
-        await runtime.settle()
+        await runtime.waitUntil { terminal.output.contains("b") }
         #expect(terminal.output.contains("b"))
     }
 }

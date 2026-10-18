@@ -78,9 +78,7 @@ struct InkFeatureTests {
             }
         }
         let (runtime, terminal) = makeRuntime(App())
-        await runtime.settle()
-        try await Task.sleep(for: .milliseconds(20))
-        await runtime.settle()
+        await runtime.waitUntil { terminal.output.contains("result 42") }
         #expect(terminal.suspensions == 1)
         #expect(terminal.output.contains("result 42"))
         let standalone = try await EnvironmentValues().suspendTerminal { "ran" }

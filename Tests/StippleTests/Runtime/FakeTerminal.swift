@@ -74,3 +74,16 @@ func makeRuntime(_ view: some View, configure: (inout RenderOptions) -> Void = {
     configure(&options)
     return (Runtime(view: view, options: options, terminal: terminal), terminal)
 }
+
+extension Runtime {
+    /// Lets time pass and frames render until `condition` holds or `timeout`
+    /// runs out. Timing-based tests poll instead of sleeping a fixed time, so
+    /// a loaded CI machine doesn't make them flaky.
+    func waitUntil(timeout: Duration = .seconds(5), _ condition: () -> Bool) async {
+        let deadline = ContinuousClock.now + timeout
+        while !condition(), ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(5))
+            await settle()
+        }
+    }
+}
