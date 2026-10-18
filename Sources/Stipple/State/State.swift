@@ -1,4 +1,4 @@
-public import Observation
+import Observation
 
 /// Observable storage behind `@State`; lives in the view's node.
 @MainActor

@@ -29,6 +29,13 @@ extension View {
     func behavior(_ change: @escaping @MainActor (inout NodeBehaviors) -> Void) -> ModifiedView<Self> {
         modified { node, _ in change(&node.behaviors) }
     }
+
+    /// Like `behavior(_:)`, but only applies when interaction is enabled (not under `.disabled()`).
+    func interaction(_ change: @escaping @MainActor (inout NodeBehaviors) -> Void) -> ModifiedView<Self> {
+        modified { node, _ in
+            if node.environment.isEnabled { change(&node.behaviors) }
+        }
+    }
 }
 
 /// A modifier you write yourself, as in SwiftUI.

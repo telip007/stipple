@@ -59,12 +59,12 @@ enum ScreenReaderRenderer {
     static func takeStaticOutput(from graph: ViewGraph) -> String {
         guard let root = graph.root else { return "" }
         let parts = ViewGraph.allNodes(in: root).filter { $0.layout is StaticLayout }.compactMap { node -> String? in
-            let text = node.children.map { text(of: $0, skipStatic: false) }.filter { !$0.isEmpty }.joined(
-                separator: "\n")
+            let content = node.children.map { text(of: $0, skipStatic: false) }.filter { !$0.isEmpty }
+                .joined(separator: "\n")
             let progress = node.storage(at: 0) { StaticProgress() }
             progress.written = progress.total
             node.rebuild()
-            return text.isEmpty ? nil : text
+            return content.isEmpty ? nil : content
         }
         return parts.isEmpty ? "" : parts.joined(separator: "\n") + "\n"
     }

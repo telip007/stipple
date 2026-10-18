@@ -93,6 +93,14 @@ Ink keeps every `aria-*` prop on one element.
 
 ## Gotchas
 
+- **Swift 6.2 resolves shadowed names differently from 6.4.** `let cross =
+  sizes.map { $0.dimension(cross) }` compiled on 6.4 (where `cross` was the
+  property) but failed on Linux with 6.2, which resolves it to the local
+  being declared. The same happened with a local `text` shadowing
+  `text(of:)`. Don't shadow members in their own initializer, and run
+  `make test-linux`. Swift 6.2 also rejects `public import` that no public
+  declaration uses, including in test files.
+
 - **Invalidation is queued synchronously, not by a task hop.** Observation's
   `onChange` fires on the mutating thread before the new value is stored. An
   earlier version hopped to the main actor with a `Task`, so `count += 1;

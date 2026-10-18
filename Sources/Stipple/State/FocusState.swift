@@ -64,9 +64,9 @@ extension View {
     /// focusable views in order; Escape clears focus. Key handlers inside a
     /// focusable view only run while it has focus.
     public func focusable(_ isFocusable: Bool = true, autoFocus: Bool = false) -> some View {
-        behavior { behaviors in
-            behaviors.focus = FocusRegistration(
-                isEnabled: isFocusable,
+        modified { node, _ in
+            node.behaviors.focus = FocusRegistration(
+                isEnabled: isFocusable && node.environment.isEnabled,
                 autoFocus: autoFocus,
                 isRequested: { nil },
                 update: { _ in },
@@ -77,9 +77,9 @@ extension View {
     /// Makes the view focusable and ties its focus to `binding`: focused
     /// while `binding` equals `value`.
     public func focused<Value: Hashable>(_ binding: FocusState<Value?>.Binding, equals value: Value) -> some View {
-        behavior { behaviors in
-            behaviors.focus = FocusRegistration(
-                isEnabled: true,
+        modified { node, _ in
+            node.behaviors.focus = FocusRegistration(
+                isEnabled: node.environment.isEnabled,
                 autoFocus: false,
                 isRequested: { binding.wrappedValue == value },
                 update: { isFocused in
@@ -95,9 +95,9 @@ extension View {
 
     /// Makes the view focusable and ties its focus to a Boolean binding.
     public func focused(_ binding: FocusState<Bool>.Binding) -> some View {
-        behavior { behaviors in
-            behaviors.focus = FocusRegistration(
-                isEnabled: true,
+        modified { node, _ in
+            node.behaviors.focus = FocusRegistration(
+                isEnabled: node.environment.isEnabled,
                 autoFocus: false,
                 isRequested: { binding.wrappedValue },
                 update: { binding.wrappedValue = $0 },

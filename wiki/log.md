@@ -34,3 +34,6 @@ Removed `Output/DisplayWidth.swift`; the line diff measures columns with `TextMe
 
 ## [2026-10-18] update | Output screen-reader mode
 Added `FrameWriterOptions.screenReader`: whole-frame rewrite, wrapped to the terminal width with `TextLayout.wrap`, cursor never shown or hidden. Ported from the `isScreenReaderEnabled` branches of `ink.tsx`. Byte-exact tests in `ScreenReaderTests.swift`.
+
+## [2026-10-18] update | Divider, hidden, disabled; Linux green
+Added `Divider`, `.hidden()` and `.disabled(_:)` (handlers and focus respect `isEnabled`). The full suite passes on Linux (swift:6.2-noble) after fixing name-shadowing and import differences between Swift 6.2 and 6.4.

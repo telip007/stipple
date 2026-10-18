@@ -6,7 +6,7 @@ extension View {
         phases: KeyPress.Phases = [.down, .repeat],
         action: @escaping @MainActor (KeyPress) -> KeyPress.Result,
     ) -> some View {
-        behavior { behaviors in
+        interaction { behaviors in
             behaviors.keyHandlers.append { press in
                 phases.contains(press.phase) ? action(press) : .ignored
             }
@@ -32,7 +32,7 @@ extension View {
     /// Handles text pasted while bracketed paste is on, delivered whole
     /// (Ink's `usePaste`). Without a paste handler, pasted text arrives as key presses.
     public func onPaste(perform action: @escaping @MainActor (String) -> Void) -> some View {
-        behavior { $0.pasteHandlers.append(action) }
+        interaction { $0.pasteHandlers.append(action) }
     }
 }
 

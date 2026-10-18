@@ -1,4 +1,4 @@
-public import Observation
+import Observation
 import Testing
 
 @testable import Stipple

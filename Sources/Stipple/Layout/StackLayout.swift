@@ -25,8 +25,8 @@ struct StackLayout: NodeLayout {
     func size(of children: [ViewNode], proposal: ProposedSize) -> Size {
         let sizes = distribute(children, proposal: proposal)
         let main = sizes.reduce(0) { $0 + $1.dimension(axis) } + totalSpacing(children.count)
-        let cross = sizes.map { $0.dimension(cross) }.max() ?? 0
-        return .along(axis, main, cross: cross)
+        let crossLength = sizes.map { $0.dimension(cross) }.max() ?? 0
+        return .along(axis, main, cross: crossLength)
     }
 
     func place(_ children: [ViewNode], in bounds: Rect, proposal: ProposedSize) {
