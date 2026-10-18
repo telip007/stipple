@@ -5,6 +5,10 @@
 /// first appears, or tie focus to a `@FocusState` with `.focused(_:equals:)`.
 /// Return calls the action from ``View/onSubmit(_:)`` of an ancestor.
 ///
+/// Editing keys follow readline. Ctrl-D deletes the character after the
+/// insertion point, except when the text is empty: then the field leaves it
+/// unhandled, so an ancestor's `.onKeyPress` can treat it as end-of-file.
+///
 /// ```swift
 /// @State private var name = ""
 /// TextField("Name", text: $name)

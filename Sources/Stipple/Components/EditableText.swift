@@ -25,6 +25,8 @@ struct EditableText: View {
             focus: focus,
             handleKey: { press in
                 guard let command = TextEditing.Command(press) else { return .ignored }
+                // As in readline, Ctrl-D on an empty line is end-of-file: let ancestors handle it.
+                if textBinding.wrappedValue.isEmpty, TextEditing.Command.isEndOfFile(press) { return .ignored }
                 if command == .submit {
                     submit?()
                 } else {

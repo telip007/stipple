@@ -93,6 +93,20 @@ private struct External: View {
     }
 }
 
+/// A field inside a view that counts Ctrl-D presses reaching it, as an app would for end-of-file.
+private struct EndOfFile: View {
+    let store: Store
+
+    var body: some View {
+        TextField("Name", text: store.binding(\.name)).focusable(autoFocus: true)
+            .onKeyPress { press in
+                guard press.key == .character("d"), press.modifiers.contains(.control) else { return .ignored }
+                store.submitted.append("eof")
+                return .handled
+            }
+    }
+}
+
 /// The plain text of a frame, with escape codes removed.
 func plain(_ frame: String) -> String {
     frame.replacing(/\u{1B}\[[0-9;?]*[A-Za-z]/, with: "")
@@ -202,6 +216,23 @@ struct TextFieldTests {
         runtime.handle(.input([0x15]))
         await runtime.settle()
         #expect(store.name.isEmpty)
+    }
+
+    @Test func ctrlDOnAnEmptyFieldReachesAncestors() async {
+        let store = Store()
+        let (runtime, _) = makeRuntime(EndOfFile(store: store))
+        runtime.handle(.input(Array("ab".utf8)))
+        runtime.handle(.input([0x01, 0x04]))
+        await runtime.settle()
+        #expect(store.name == "b")
+        #expect(store.submitted.isEmpty)
+        runtime.handle(.input([0x04]))
+        await runtime.settle()
+        #expect(store.name.isEmpty)
+        #expect(store.submitted.isEmpty)
+        runtime.handle(.input([0x04]))
+        await runtime.settle()
+        #expect(store.submitted == ["eof"])
     }
 
     @Test func externalChangeClampsTheCursor() async {

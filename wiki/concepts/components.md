@@ -24,7 +24,9 @@ hooks, so they show what an app can build. They live in
 - **Editing.** Printable characters insert at the cursor. Backspace and Delete remove a
   grapheme. Left and Right move, and Home and End jump to the ends. Ctrl-A and Ctrl-E
   also jump to the ends, Ctrl-U and Ctrl-K delete to the start and end, and Ctrl-W
-  and Option-Backspace delete a word. Option-Left and Option-Right move by word, and
+  and Option-Backspace delete a word. Ctrl-D deletes forward, but on an empty field it
+  is left unhandled (`.ignored`), so an ancestor's `.onKeyPress` sees it and can treat
+  it as end-of-file, as readline does. Option-Left and Option-Right move by word, and
   Command-Left and Command-Right by line. A paste inserts the whole text at once.
   The mapping lives in [TextFieldKeys.swift](../../Sources/Stipple/Components/TextFieldKeys.swift),
   and the edits in [TextEditing.swift](../../Sources/Stipple/Components/TextEditing.swift).

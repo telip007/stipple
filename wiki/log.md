@@ -64,3 +64,6 @@ Pushed to github.com/telip007/stipple, and CI passes on macOS, Linux and lint. A
 
 ## [2026-10-18] update | Color depth
 `Color` promised approximation but SGR always wrote `38;2`. Added `ColorDepth` (detection ported from `supports-color`, downsampling from `ansi-styles`), `RenderOptions.colorDepth` (nil detects), `Terminal.colorDepth`, and a `colorDepth:` parameter on `renderToString` and `Canvas.encodedLines` (default truecolor). Deviations are listed on the Rendering page.
+
+## [2026-10-18] update | Ctrl-D on an empty TextField
+Ctrl-D still deletes forward, but on an empty field it is `.ignored`, so ancestor `.onKeyPress` handlers see it and apps can treat it as end-of-file, as readline does. Documented on the Components page and in the `TextField` doc comment.

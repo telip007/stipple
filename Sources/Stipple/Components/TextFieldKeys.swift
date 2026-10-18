@@ -37,6 +37,11 @@ extension TextEditing.Command {
         return .insert(press.characters.isEmpty ? String(character) : press.characters)
     }
 
+    /// Whether `press` is Ctrl-D, which readline treats as end-of-file on an empty line.
+    static func isEndOfFile(_ press: KeyPress) -> Bool {
+        press.key == .character("d") && press.modifiers.contains(.control)
+    }
+
     private static let controlCommands: [Character: Self] = [
         "a": .moveToStart,
         "e": .moveToEnd,
