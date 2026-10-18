@@ -43,3 +43,6 @@ Scripted VHS tapes for the counter, tasks and chat examples record GIF, MP4 and 
 
 ## [2026-10-18] update | Ink parity fixes from the QA suite
 Merged about 190 parity tests ported from Ink. Fixed: Static output in renderToString, re-truncation when drawing, word wrapping next to spacers (stacks now offer the ideal length), the stretch idiom (placement at the final cross size), and per-line truncation and hard wrapping via `.textWrapping(_:)`.
+
+## [2026-10-18] update | Terminal module
+Raw mode, mode tracking, event stream (stdin reader thread, SIGWINCH, SIGCONT), suspend, and crash-safe restore through precomputed records and async-signal-safe handlers. Verified end to end: a `fatalError` inside a pty leaves the terminal cooked, echoing and with the cursor shown.
