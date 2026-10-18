@@ -49,3 +49,6 @@ Raw mode, mode tracking, event stream (stdin reader thread, SIGWINCH, SIGCONT), 
 
 ## [2026-10-18] update | TextField and SecureField
 Single-line text inputs built from the public view API: focus through `.focusable` and `@FocusState`, `.onSubmit`, readline-style editing, a caret that is inverse and drives `.cursorPosition`, and masked secure entry. Gotchas on the Components page.
+
+## [2026-10-18] update | Components: ProgressView and SelectionList
+Added `ProgressView` (spinner with `ProgressViewStyle` presets dots, line and arc, and a determinate bar that fills its offered width) and `SelectionList` (focusable, keyboard-driven, scrolls with `visibleRows`), with tests in `Tests/StippleTests/Components/`.
