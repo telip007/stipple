@@ -40,6 +40,8 @@ struct TerminalTests {
             inputDescriptor: 0, outputDescriptor: pipe.fileHandleForWriting.fileDescriptor, environment: [:])
         #expect(!piped.isTerminal)
         #expect(!piped.isInteractive)
+        #expect(piped.colorDepth == .monochrome)
+        #expect(pty.terminal(environment: ["COLORTERM": "truecolor"]).colorDepth == .trueColor)
     }
 
     @Test(

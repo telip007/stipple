@@ -23,8 +23,8 @@ extension Runtime {
         }
         for _ in 0..<4 {
             graph.flush()
-            staticOutput += graph.takeStaticOutput(width: size.width)
-            result = FrameRenderer(graph: graph).render(width: size.width, height: height)
+            staticOutput += graph.takeStaticOutput(width: size.width, colorDepth: colorDepth)
+            result = FrameRenderer(graph: graph, colorDepth: colorDepth).render(width: size.width, height: height)
             graph.runGeometryCallbacks()
             if !graph.hasPendingWork { break }
         }

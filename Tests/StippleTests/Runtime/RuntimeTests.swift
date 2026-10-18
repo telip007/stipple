@@ -104,4 +104,14 @@ struct RuntimeTests {
         #expect(terminal.output.contains("Count: 0"))
         #expect(!terminal.output.contains("\u{1B}["))
     }
+
+    @Test func colorDepthComesFromOptionsElseTheTerminal() {
+        let view = Text("hue").foregroundStyle(Color(red: 255, green: 0, blue: 0))
+        let (detected, terminal) = makeRuntime(view)
+        #expect(detected.colorDepth == .trueColor)
+        #expect(terminal.output.contains("\u{1B}[38;2;255;0;0mhue"))
+        let (forced, forcedTerminal) = makeRuntime(view) { $0.colorDepth = .ansi256 }
+        #expect(forced.colorDepth == .ansi256)
+        #expect(forcedTerminal.output.contains("\u{1B}[38;5;196mhue"))
+    }
 }

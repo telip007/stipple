@@ -185,8 +185,9 @@ Stipple mirrors SwiftUI's names and layout model, with these differences:
   `@FocusState` reads and sets it.
 - **Inline by default.** The view renders below the shell prompt and leaves its
   last frame in scrollback. Use `RenderOptions.alternateScreen` for full-screen apps.
-- **Text only.** Colours are ANSI, 256-colour or truecolor; borders are box-drawing
-  characters. There are no images or custom drawing.
+- **Text only.** Colours are ANSI, 256-colour or truecolor, reduced to what the
+  terminal supports (detected like chalk, or set `RenderOptions.colorDepth`);
+  borders are box-drawing characters. There are no images or custom drawing.
 
 ## Contributing
 

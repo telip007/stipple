@@ -1,8 +1,11 @@
 /// A terminal color: one of the 16 named ANSI colors, an entry of the
 /// 256-color palette, or a 24-bit RGB value.
 ///
-/// Named colors follow the user's terminal theme. RGB colors are exact on
-/// truecolor terminals and are approximated elsewhere.
+/// Named colors follow the user's terminal theme. Colors are encoded at the
+/// terminal's ``ColorDepth``: RGB colors are exact on truecolor terminals,
+/// become the nearest 256-color entry on 256-color terminals, and palette and
+/// RGB colors become the nearest ANSI color on 16-color terminals. Without
+/// color support no colors are written, but text attributes still are.
 public struct Color: Hashable, Sendable {
     /// How the color is encoded on the wire.
     public enum Representation: Hashable, Sendable {

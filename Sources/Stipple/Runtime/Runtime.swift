@@ -26,6 +26,7 @@ final class Runtime {
         rootView = view
         isScreenReaderEnabled =
             options.isScreenReaderEnabled ?? (ProcessInfo.processInfo.environment["STIPPLE_SCREEN_READER"] == "true")
+        colorDepth = options.colorDepth ?? terminal.colorDepth
         let interactive = options.interactive ?? terminal.isInteractive
         writer = FrameWriter(
             output: terminal,
@@ -45,6 +46,9 @@ final class Runtime {
 
     /// Whether frames are rendered as plain text for screen readers.
     let isScreenReaderEnabled: Bool
+
+    /// The depth frames and static output are encoded at.
+    let colorDepth: ColorDepth
 
     private func start(interactive: Bool) {
         if interactive {

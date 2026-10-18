@@ -1,6 +1,6 @@
 ---
 title: Rendering
-summary: Text measurement, wrapping and truncation, ANSI parsing, the cell canvas, borders and SGR encoding.
+summary: Text measurement, wrapping and truncation, ANSI parsing, the cell canvas, borders, SGR encoding and color depth.
 updated: 2026-10-18
 ---
 
@@ -19,12 +19,13 @@ upstream mapping in [Ink](../sources/ink.md)). Code: [`Sources/Stipple/Render/`]
 | `TextLayout`, `TruncationMode` | [`TextLayout.swift`](../../Sources/Stipple/Render/TextLayout.swift), [`StyledGrapheme.swift`](../../Sources/Stipple/Render/StyledGrapheme.swift) | `wrap-ansi`, `cli-truncate`, `wrap-text.ts` |
 | `ANSITokenizer`, `ANSIText` | [`ANSITokenizer.swift`](../../Sources/Stipple/Render/ANSITokenizer.swift), [`ANSIText.swift`](../../Sources/Stipple/Render/ANSIText.swift) | `ansi-tokenizer.ts`, `sanitize-ansi.ts` |
 | `SGR` | [`SGR.swift`](../../Sources/Stipple/Render/SGR.swift) | `colorize.ts`, `ansi-styles` |
+| `ColorDepth` | [`Core/ColorDepth.swift`](../../Sources/Stipple/Core/ColorDepth.swift) | `supports-color`, `ansi-styles`' `rgbToAnsi256` and `ansi256ToAnsi` |
 | `Canvas` | [`Canvas.swift`](../../Sources/Stipple/Render/Canvas.swift) and `Canvas+*.swift` | `output.ts`, `render-background.ts`, `render-border.ts` |
 | `BorderStyle` | [`BorderStyle.swift`](../../Sources/Stipple/Render/BorderStyle.swift) | `cli-boxes` |
 
 ## API
 
-`TextMetrics`, `TruncationMode` and `BorderStyle` (with `Edges` and `Colors`)
+`TextMetrics`, `TruncationMode`, `ColorDepth` and `BorderStyle` (with `Edges` and `Colors`)
 are public. The rest is internal because it works on `StyledRun`.
 
 ```swift
@@ -45,7 +46,9 @@ canvas.write(_ runs: [StyledRun], at: Point, clip: Rect? = nil)
 canvas.fill(_ rect: Rect, background: Color, clip: Rect? = nil)
 canvas.drawBorder(_ border: BorderStyle, in: Rect, edges: BorderStyle.Edges = .all, style: Style, clip: Rect? = nil)
 canvas.drawBorder(_ border: BorderStyle, in: Rect, edges: BorderStyle.Edges = .all, colors: BorderStyle.Colors, clip: Rect? = nil)
-canvas.encodedLines() -> [String]
+canvas.encodedLines(colorDepth: ColorDepth = .trueColor) -> [String]
+
+ColorDepth.detect(environment: [String: String], isTerminal: Bool) -> ColorDepth  // .monochrome, .ansi16, .ansi256, .trueColor
 canvas.plainLines() -> [String]
 canvas.cell(x:y:) -> Canvas.Cell?      // grapheme, style, isContinuation
 ```
@@ -78,6 +81,24 @@ flag. Styles are interned per canvas so cells stay small and comparing styles
 while encoding is an integer compare. `encodedLines` switches styles with the
 shortest SGR parameters, caches transitions per style pair, closes the style
 and any hyperlink at the end of each row and trims trailing unstyled spaces.
+
+### Color depth
+
+Cells keep the colors as written; `encodedLines(colorDepth:)` reduces every
+interned style before encoding, the way chalk picks a color level per stream.
+RGB becomes the nearest xterm-256 entry (grey ramp for greys, else the 6×6×6
+cube, ansi-styles' `rgbToAnsi256`); a 256-color entry becomes the nearest of
+the 16 ANSI colors (`ansi256ToAnsi`); `.monochrome` drops colors and keeps
+attributes and links. The runtime takes `RenderOptions.colorDepth`, else
+`Terminal.colorDepth`, which runs `ColorDepth.detect` over the terminal's
+environment and whether stdout is a tty. `renderToString` takes a
+`colorDepth:` that defaults to `.trueColor`, so its output is stable.
+
+`detect` follows `supports-color` (v10): `FORCE_COLOR`, Azure Pipelines,
+non-tty → none, `TERM=dumb`, CI vendors, TeamCity, `COLORTERM=truecolor`,
+kitty/Ghostty/WezTerm, `TERM_PROGRAM` (iTerm 3+ truecolor, older iTerm and
+Apple Terminal 256), `TERM` ending in `-256(color)`, then color-ish `TERM`
+names or any `COLORTERM` (16). The tests use upstream's expected values.
 
 ## Gotchas
 
@@ -114,6 +135,16 @@ and any hyperlink at the end of each row and trims trailing unstyled spaces.
 - **Unsupported SGR parts** (underline colors `58`, blink, hidden, malformed
   color forms) are dropped by the parser; underline styles `4:n` become a plain
   underline.
+- **Color depth deviations from `supports-color`.** `NO_COLOR` (non-empty)
+  turns color off unless `FORCE_COLOR` is set; `supports-color` ignores it,
+  Node's `getColorDepth` honours it. `COLORTERM=24bit` counts as truecolor too.
+  The `--color`/`--no-color` argv flags are not read (arguments belong to the
+  app), and there is no Windows branch.
+- **A tty with no `TERM` gets no color**, as in `supports-color`: detection
+  falls through to the minimum. Set `RenderOptions.colorDepth` to override.
+- **Monochrome keeps attributes.** chalk at level 0 drops all styling; Stipple
+  still writes bold, inverse and the rest, because carets and selections are
+  drawn with inverse.
 - **The East Asian Width table is hand-written** from Unicode 16 data for W and F
   characters. Emoji presentation comes from the standard library, so new
   emoji follow the toolchain's Unicode version.

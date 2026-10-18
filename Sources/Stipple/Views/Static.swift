@@ -56,8 +56,8 @@ struct StaticLayout: NodeLayout {
 extension ViewGraph {
     /// Renders the not-yet-written items of every `Static` in the graph,
     /// `width` columns wide, marks them written and returns the text to put
-    /// above the frame ("" when there is none).
-    func takeStaticOutput(width: Int) -> String {
+    /// above the frame ("" when there is none), colors reduced to `colorDepth`.
+    func takeStaticOutput(width: Int, colorDepth: ColorDepth = .trueColor) -> String {
         guard let root else { return "" }
         let lines = Self.staticNodes(in: root).flatMap { node -> [String] in
             let pending = node.layoutChildren
@@ -74,7 +74,7 @@ extension ViewGraph {
             let progress = node.storage(at: 0) { StaticProgress() }
             progress.written = progress.total
             node.rebuild()
-            return canvas.encodedLines()
+            return canvas.encodedLines(colorDepth: colorDepth)
         }
         return lines.isEmpty ? "" : lines.joined(separator: "\n") + "\n"
     }

@@ -35,7 +35,7 @@ public final class Terminal: TerminalOutput {
     /// - Parameters:
     ///   - inputDescriptor: Where input comes from. Defaults to standard input (descriptor 0).
     ///   - outputDescriptor: Where output goes. Defaults to standard output (descriptor 1).
-    ///   - environment: Variables used for `COLUMNS`, `LINES` and CI detection.
+    ///   - environment: Variables used for `COLUMNS`, `LINES`, CI and color depth detection.
     ///     Defaults to the process environment.
     public init(
         inputDescriptor: Int32 = 0,
@@ -70,6 +70,10 @@ public final class Terminal: TerminalOutput {
 
     /// Whether to draw interactively: output is a terminal and this is not CI.
     public var isInteractive: Bool { isTerminal && !isCI }
+
+    /// How many colors the output supports, from the environment and
+    /// ``isTerminal`` (see ``ColorDepth/detect(environment:isTerminal:)``).
+    public var colorDepth: ColorDepth { ColorDepth.detect(environment: environment, isTerminal: isTerminal) }
 
     // MARK: Output
 

@@ -94,12 +94,14 @@ plus `string-width`, `wrap-ansi` and `cli-truncate` behaviour.
   `write(_ runs:at:clip:)` draws one line and clips to a `Rect`.
   `fill(_ rect:background:clip:)` paints background only.
   `drawBorder(_ border: BorderStyle, in:style:clip:)`.
-  `encodedLines() -> [String]` returns ANSI lines with minimal SGR transitions
-  and trailing default cells trimmed, as Ink trims.
+  `encodedLines(colorDepth:) -> [String]` returns ANSI lines with minimal SGR
+  transitions and trailing default cells trimmed, as Ink trims, with colors
+  reduced to the `ColorDepth` (default truecolor).
 - `public struct BorderStyle` with Ink's `cli-boxes` set: `.single`, `.double`,
   `.rounded`, `.heavy` (Ink's `bold`), `.singleDouble`, `.doubleSingle`,
   `.classic` and `.arrow`, plus a memberwise initializer for custom borders.
-- Color encoding: truecolor SGR `38;2`/`48;2`; palette `38;5`; ANSI `30–37`/`90–97`.
+- Color encoding: truecolor SGR `38;2`/`48;2`; palette `38;5`; ANSI `30–37`/`90–97`,
+  downsampled to the terminal's `ColorDepth` ([rendering](rendering.md#color-depth)).
 
 ### Output/ ([page](output.md))
 
@@ -170,6 +172,7 @@ the layout protocol and stacks, modifiers, `Static`, the render loop with
 | `useState` / context | `@State`, `@Binding`, `@Observable` models, `.environment(_:)` |
 | `kittyKeyboard` option | `RenderOptions.keyboardProtocol` |
 | `alternateScreen` option | `RenderOptions.alternateScreen` |
+| chalk's `supports-color` level | `RenderOptions.colorDepth` (`nil` detects, `ColorDepth.detect(environment:isTerminal:)`) |
 
 ## Gotchas
 

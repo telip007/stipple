@@ -6,6 +6,8 @@ protocol TerminalHost: TerminalOutput {
     var isInteractive: Bool { get }
     /// Whether stdin is a terminal (raw mode and key input are possible).
     var isInputTerminal: Bool { get }
+    /// How many colors the output supports.
+    var colorDepth: ColorDepth { get }
     /// Switches stdin to raw mode; `false` if stdin isn't a terminal.
     @discardableResult func enableRawMode() -> Bool
     /// Undoes every mode and leaves raw mode.

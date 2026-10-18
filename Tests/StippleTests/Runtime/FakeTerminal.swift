@@ -9,6 +9,7 @@ final class FakeTerminal: TerminalHost {
     var isTerminal = true
     var isInteractive = true
     var isInputTerminal = true
+    var colorDepth = ColorDepth.trueColor
     private(set) var rawMode = false
     private(set) var bracketedPaste = false
     private(set) var kittyFlags: [KittyKeyboardFlags] = []

@@ -30,6 +30,10 @@ public struct RenderOptions: Sendable {
     public var keyboardProtocol = KeyboardProtocol.legacy
     /// Turn on screen reader output. `nil` reads `STIPPLE_SCREEN_READER=true`.
     public var isScreenReaderEnabled: Bool?
+    /// How many colors to use; colors beyond it are approximated. `nil`
+    /// detects it from the environment and whether stdout is a terminal, as
+    /// chalk's `supports-color` does (see ``ColorDepth/detect(environment:isTerminal:)``).
+    public var colorDepth: ColorDepth?
 
     /// Creates the default options.
     public init() {}

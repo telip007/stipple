@@ -61,3 +61,6 @@ The first push was blocked by a flaky Linux test under load. Timer-based tests n
 
 ## [2026-10-18] update | Published on GitHub
 Pushed to github.com/telip007/stipple, and CI passes on macOS, Linux and lint. Allowed Actions to open PRs for release-please, and pinned the first release to 0.1.0.
+
+## [2026-10-18] update | Color depth
+`Color` promised approximation but SGR always wrote `38;2`. Added `ColorDepth` (detection ported from `supports-color`, downsampling from `ansi-styles`), `RenderOptions.colorDepth` (nil detects), `Terminal.colorDepth`, and a `colorDepth:` parameter on `renderToString` and `Canvas.encodedLines` (default truecolor). Deviations are listed on the Rendering page.
