@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/telip007/stipple/compare/0.3.0...0.3.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* **text:** keep the last lines under head truncation ([4409051](https://github.com/telip007/stipple/commit/44090510f82234fc268f19d8d8eccef5da7a11e8))
+
 ## [0.3.0](https://github.com/telip007/stipple/compare/0.2.0...0.3.0) (2026-10-18)
 
 
