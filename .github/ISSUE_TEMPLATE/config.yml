@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
-  - name: OpenRouter API questions
-    url: https://openrouter.ai/docs/api_reference/overview
-    about: Questions about the API itself (models, pricing, limits) belong with OpenRouter.
+  - name: Ink behaviour questions
+    url: https://github.com/vadimdemedes/ink
+    about: Stipple ports Ink's behaviour. Questions about how Ink itself works belong in the Ink repository.

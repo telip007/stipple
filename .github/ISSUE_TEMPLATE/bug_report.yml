@@ -6,22 +6,25 @@ body:
     id: what
     attributes:
       label: What happened?
-      description: Include the code you ran and the full error. Redact API keys.
+      description: Include a minimal view that reproduces it, and any error or garbled output.
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
       label: What did you expect?
+      description: If Ink behaves differently, say how.
   - type: input
     id: swift
     attributes:
-      label: Swift version and platform
-      placeholder: Swift 6.2, iOS 18 / macOS 15 / Ubuntu 24.04
+      label: Swift version and OS
+      placeholder: Swift 6.2, macOS 15 / Ubuntu 24.04
     validations:
       required: true
-  - type: textarea
-    id: response
+  - type: input
+    id: terminal
     attributes:
-      label: Response body (redacted), if a response failed to decode
-      render: json
+      label: Terminal emulator and TERM
+      placeholder: Ghostty 1.2, TERM=xterm-ghostty (or iTerm2, kitty, Terminal.app, tmux, ssh…)
+    validations:
+      required: true

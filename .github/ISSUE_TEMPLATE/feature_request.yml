@@ -1,12 +1,12 @@
-name: Feature or endpoint request
-description: Missing endpoint, convenience API or behaviour
+name: Feature request
+description: Missing Ink behaviour, a convenience API or a SwiftUI analogue
 labels: [enhancement]
 body:
   - type: textarea
     id: need
     attributes:
       label: What do you need?
-      description: For a missing endpoint, name the OpenRouter docs page or the OpenAPI tag.
+      description: For an Ink feature, link its docs or source. For an API, name the SwiftUI analogue if there is one.
     validations:
       required: true
   - type: textarea
