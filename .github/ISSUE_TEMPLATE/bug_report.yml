@@ -1,0 +1,27 @@
+name: Bug report
+description: Something doesn't work as documented
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Include the code you ran and the full error. Redact API keys.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+  - type: input
+    id: swift
+    attributes:
+      label: Swift version and platform
+      placeholder: Swift 6.2, iOS 18 / macOS 15 / Ubuntu 24.04
+    validations:
+      required: true
+  - type: textarea
+    id: response
+    attributes:
+      label: Response body (redacted), if a response failed to decode
+      render: json

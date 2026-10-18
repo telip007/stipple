@@ -1,0 +1,16 @@
+name: Feature or endpoint request
+description: Missing endpoint, convenience API or behaviour
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What do you need?
+      description: For a missing endpoint, name the OpenRouter docs page or the OpenAPI tag.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API (optional)
+      render: swift

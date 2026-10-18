@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Enforce Conventional Commits; release-please derives versions and the
+# changelog from these headers.
+exec python3 -I "$(git rev-parse --show-toplevel)/Scripts/check-commit-message.py" "$1"

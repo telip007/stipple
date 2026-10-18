@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Nothing leaves the machine unless the full gate passes. `make check` covers
+# the host platform; the other platform's code paths compile only there:
+#  - on macOS, Linux (AsyncHTTPClient/NIO) is checked in Docker when available;
+#  - on Linux, Apple-only paths (URLSession) are left to CI.
+set -euo pipefail
+make check
+case "$(uname -s)" in
+Darwin)
+    if docker info >/dev/null 2>&1; then
+        make test-linux
+    else
+        echo "warning: Docker isn't running, skipping 'make test-linux'. CI will run the Linux build." >&2
+    fi
+    ;;
+Linux)
+    echo "note: Apple-platform builds (URLSession code paths) are verified by CI." >&2
+    ;;
+esac

@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pr-title:
+    name: PR title follows Conventional Commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check PR title (it becomes the squash-merge commit)
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: python3 -I Scripts/check-commit-message.py --title "$TITLE"
+
+  lint:
+    name: Lint (format, SwiftLint, wiki)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      - run: make lint
+
+  macos:
+    name: Build, test, coverage (macOS)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+      - run: swift --version
+      - run: make build
+      - run: make coverage
+
+  apple-platforms:
+    name: Build (iOS, tvOS, watchOS, visionOS)
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [iOS, tvOS, watchOS, visionOS]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build for ${{ matrix.platform }}
+        shell: bash # implies -o pipefail, so xcodebuild failures aren't hidden by tail
+        run: |
+          xcodebuild build -scheme OpenRouter \
+            -destination "generic/platform=${{ matrix.platform }}" \
+            -skipPackagePluginValidation | tail -n 20
+
+  linux:
+    name: Build and test (Linux)
+    runs-on: ubuntu-latest
+    container: swift:6.2-noble
+    steps:
+      - uses: actions/checkout@v7
+      - run: swift --version
+      - run: swift build
+      - run: swift test --parallel
+
+  generated-code:
+    name: Generated code is up to date
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+      - run: make generate
+      - name: Fail if regeneration changed anything
+        run: |
+          git status --porcelain -- Sources/OpenRouterAPI
+          test -z "$(git status --porcelain -- Sources/OpenRouterAPI)"
