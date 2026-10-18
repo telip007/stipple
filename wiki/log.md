@@ -16,3 +16,6 @@ InputParser decodes stdin bytes into key, paste and focus events, with legacy, r
 
 ## [2026-10-18] update | Output module
 Ported log-update (standard and incremental), line-update, cursor-helpers, the frame logic from ink.tsx (debug, non-interactive, interactive, full clear, static output, alternate screen, writeAbove, resize, finish) into `Sources/Stipple/Output/`, with 67 byte-exact tests in `Tests/StippleTests/Output/`. Output page written with the escape table and gotchas.
+
+## [2026-10-18] update | Render module
+Text metrics, wrapping, truncation, ANSI tokenizer and parser, SGR encoder, cell canvas with wide-character-safe clipping, fill and borders, `BorderStyle`; ported Ink's measure-text, sanitize-ansi, ansi-tokenizer, clip/overlap wide background and combining-mark tests.
