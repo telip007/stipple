@@ -20,7 +20,11 @@ final class FocusController {
             registration.isRequested() == false || !registration.isEnabled
         {
             blur()
-        } else if focusedNode == nil, let auto = focusables.first(where: { $0.behaviors.focus?.autoFocus == true }) {
+        } else if focusedNode == nil,
+            let auto = focusables.first(where: {
+                $0.behaviors.focus?.autoFocus == true && $0.behaviors.focus?.isEnabled == true
+            })
+        {
             focus(auto)
         }
     }
