@@ -46,3 +46,6 @@ Merged about 190 parity tests ported from Ink. Fixed: Static output in renderToS
 
 ## [2026-10-18] update | Terminal module
 Raw mode, mode tracking, event stream (stdin reader thread, SIGWINCH, SIGCONT), suspend, and crash-safe restore through precomputed records and async-signal-safe handlers. Verified end to end: a `fatalError` inside a pty leaves the terminal cooked, echoing and with the cursor shown.
+
+## [2026-10-18] update | TextField and SecureField
+Single-line text inputs built from the public view API: focus through `.focusable` and `@FocusState`, `.onSubmit`, readline-style editing, a caret that is inverse and drives `.cursorPosition`, and masked secure entry. Gotchas on the Components page.
