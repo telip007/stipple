@@ -237,7 +237,7 @@ final class LogUpdate {
 }
 
 /// Splits on `\n` only, keeping a trailing empty element, as `String.split("\n")` does in JavaScript.
-private func splitLines(_ text: String) -> [String] {
+func splitLines(_ text: String) -> [String] {
     var lines = [""]
     for scalar in text.unicodeScalars {
         if scalar == "\n" {

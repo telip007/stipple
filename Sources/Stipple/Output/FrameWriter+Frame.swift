@@ -15,6 +15,8 @@ extension FrameWriter {
             renderDebug(frame)
         } else if !interactive {
             renderNonInteractive(frame)
+        } else if options.screenReader {
+            renderScreenReader(frame)
         } else {
             if !frame.staticOutput.isEmpty {
                 hasRenderedStaticOutput = true
@@ -148,8 +150,59 @@ extension FrameWriter {
 
     /// Redraws the frame after console output was written above it.
     func restoreLastOutput() {
+        if options.screenReader {
+            // Screen-reader frames are plain text, so they are restored without cursor placement.
+            emit(lastOutputToRender)
+            log.setCursorPosition(nil)
+            log.sync(lastOutputToRender)
+            return
+        }
         log.setCursorPosition(cursorPosition)
         log.render(lastOutputToRender.isEmpty ? lastOutput + "\n" : lastOutputToRender)
+    }
+
+    /// Screen-reader mode: the frame is wrapped to the terminal width and rewritten
+    /// whole, with no cursor movement or hiding. Port of the `isScreenReaderEnabled`
+    /// branch of `renderFrame` in `ink.tsx`.
+    func renderScreenReader(_ frame: Frame) {
+        let sync = shouldSynchronize
+        if sync {
+            emit(Escape.beginSynchronizedUpdate)
+        }
+        let wrapped = screenReaderText(frame.text)
+        if frame.staticOutput.isEmpty, wrapped == lastOutputToRender {
+            if sync {
+                emit(Escape.endSynchronizedUpdate)
+            }
+            return
+        }
+
+        log.clear()
+        lastOutputHeight = 0
+        if !frame.staticOutput.isEmpty {
+            emit(frame.staticOutput)
+            if alternateScreen {
+                fullStaticOutput += frame.staticOutput
+            }
+        }
+        emit(wrapped)
+        lastOutput = frame.text
+        lastOutputToRender = wrapped
+        lastOutputHeight = wrapped.isEmpty ? 0 : splitLines(wrapped).count
+        // Screen-reader output uses its own cursor placement, so no cursor is shown.
+        log.setCursorPosition(nil)
+        log.sync(wrapped)
+        if sync {
+            emit(Escape.endSynchronizedUpdate)
+        }
+    }
+
+    /// `text` word-wrapped to the terminal width, each line re-encoded with the
+    /// styles it carries. Ink's `wrapAnsi(output, columns, {trim: false, hard: true})`.
+    func screenReaderText(_ text: String) -> String {
+        TextLayout.wrap(ANSIText.parse(text), width: output.size.width)
+            .map { ANSIText.encode($0) }
+            .joined(separator: "\n")
     }
 
     func emit(_ text: String) {

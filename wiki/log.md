@@ -25,3 +25,6 @@ View/ViewBuilder, retained view graph with Observation tracking, @State/@Binding
 
 ## [2026-10-18] update | Output uses TextMetrics for widths
 Removed `Output/DisplayWidth.swift`; the line diff measures columns with `TextMetrics.width(of:)` from `Render/`, so there is one width function. Output tests now check that measure directly.
+
+## [2026-10-18] update | Output screen-reader mode
+Added `FrameWriterOptions.screenReader`: whole-frame rewrite, wrapped to the terminal width with `TextLayout.wrap`, cursor never shown or hidden. Ported from the `isScreenReaderEnabled` branches of `ink.tsx`. Byte-exact tests in `ScreenReaderTests.swift`.
