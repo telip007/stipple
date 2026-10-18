@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/telip007/stipple/compare/0.2.0...0.3.0) (2026-10-18)
+
+
+### Features
+
+* focus on click, hover and clickable SelectionList rows ([4a382c9](https://github.com/telip007/stipple/commit/4a382c9733be83af5e5c29ee1ac69d3147237639))
+
 ## [0.2.0](https://github.com/telip007/stipple/compare/0.1.1...0.2.0) (2026-10-18)
 
 
