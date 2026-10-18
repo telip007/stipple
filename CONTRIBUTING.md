@@ -51,6 +51,9 @@ and also lint each edited file. See `wiki/concepts/agent-workflow.md`.
   | `docs:`, `test:`, `ci:`, `refactor:`, `chore:` | no release |
 
   Don't edit `CHANGELOG.md`; it's generated.
+- Changed how an example looks? Re-record the README demos with `make demos`
+  (needs [VHS](https://github.com/charmbracelet/vhs), macOS) and commit the
+  files in `.github/assets/demos/`. See `wiki/concepts/demos.md`.
 
 ## Pull requests
 

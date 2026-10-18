@@ -4,12 +4,13 @@
 #   make fix             auto-format
 #   make check           lint + build (warnings are errors) + tests + coverage gate
 #   make test-linux      run the tests in a Linux container (needs Docker)
+#   make demos           re-record the README GIF/MP4/PNG demos (needs vhs)
 
 SOURCES := Sources Tests Examples Package.swift
 MIN_COVERAGE ?= 90
 SWIFT_IMAGE ?= swift:6.2-noble
 
-.PHONY: bootstrap fix format lint wiki-lint build test coverage check test-linux clean
+.PHONY: bootstrap fix format lint wiki-lint build test coverage check test-linux demos clean
 
 bootstrap:
 	@command -v swiftlint >/dev/null || { \
@@ -44,6 +45,16 @@ check: lint build coverage
 test-linux:
 	docker run --rm -v "$(CURDIR)":/src -v stipple-linux-build:/build -w /src $(SWIFT_IMAGE) \
 		swift test --parallel --scratch-path /build
+
+# Re-record the README demos (needs `brew install vhs`; macOS, because the chat
+# demo pastes from the clipboard). Outputs land in .github/assets/demos/.
+demos:
+	swift build -c release --product counter --product tasks --product chat
+	printf 'Pasted via bracketed paste.' | pbcopy
+	@for tape in Scripts/demos/*.tape; do \
+		echo "recording $$tape"; \
+		STIPPLE_BIN="$(CURDIR)/.build/release" vhs "$$tape" >/dev/null || exit 1; \
+	done
 
 clean:
 	swift package clean

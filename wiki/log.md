@@ -22,3 +22,6 @@ Text metrics, wrapping, truncation, ANSI tokenizer and parser, SGR encoder, cell
 
 ## [2026-10-18] update | View system, runtime and examples
 View/ViewBuilder, retained view graph with Observation tracking, @State/@Binding/@Environment/@FocusState, two-pass layout (stacks, spacer, frame, padding, border, background, clip, offset), Text, Static, GeometryReader, TimelineView, key/paste/focus dispatch, throttled runtime and three examples verified end to end in a pty.
+
+## [2026-10-18] update | README demos and README example tests
+Scripted VHS tapes for the counter, tasks and chat examples record GIF, MP4 and PNG into `.github/assets/demos/` (`make demos`); README gets a hero GIF and an Examples section; `ReadmeExampleTests` compiles and renders the README's Swift snippet.
