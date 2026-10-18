@@ -162,6 +162,14 @@ import Testing
         #expect(canvas.cell(x: 1, y: 0)?.style == .red)
     }
 
+    @Test func writingNothingVisibleLeavesWideCharactersAlone() {
+        var canvas = canvas(4)
+        canvas.write([run("你好")], at: .zero)
+        canvas.write([run("\u{200B}")], at: Point(x: 1, y: 0))
+        canvas.write([run("")], at: Point(x: 1, y: 0))
+        #expect(canvas.plainLines() == ["你好"])
+    }
+
     @Test func markWithoutBaseIsDropped() {
         var canvas = canvas(3)
         canvas.write([run("\u{301}X"), run("\u{200B}")], at: .zero)

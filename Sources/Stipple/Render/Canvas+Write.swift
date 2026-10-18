@@ -18,7 +18,7 @@ extension Canvas {
             }
         }
         // The write may have ended inside a wide character that was there before.
-        if cursor.x >= area.minX, cursor.x < width, cells[cursor.row + cursor.x].isContinuation {
+        if cursor.startChecked, cursor.x < width, cells[cursor.row + cursor.x].isContinuation {
             blank(cursor.row + cursor.x)
         }
     }

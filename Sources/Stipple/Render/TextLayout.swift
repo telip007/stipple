@@ -16,7 +16,9 @@ enum TextLayout {
     static let ellipsis: Character = "…"
 
     /// Splits runs on `\n`. Styles carry across the break. Empty input and
-    /// text without a newline give one line, which may be empty.
+    /// text without a newline give one line, which may be empty. Tabs are
+    /// expanded to spaces up to the next multiple of 8 columns, counted from
+    /// the start of the line, so measuring and drawing agree.
     static func lines(_ runs: [StyledRun]) -> [[StyledRun]] {
         var result: [[StyledRun]] = [[]]
         for run in runs {
@@ -32,7 +34,27 @@ enum TextLayout {
                 }
             }
         }
-        return result
+        return result.map(expandTabs)
+    }
+
+    /// Replaces each tab with the spaces that reach the next 8-column tab stop.
+    private static func expandTabs(_ line: [StyledRun]) -> [StyledRun] {
+        guard line.contains(where: { $0.text.contains("\t") }) else { return line }
+        var column = 0
+        return line.map { run in
+            var text = ""
+            for character in run.text {
+                if character == "\t" {
+                    let spaces = 8 - column % 8
+                    text += String(repeating: " ", count: spaces)
+                    column += spaces
+                } else {
+                    text.append(character)
+                    column += TextMetrics.width(of: character)
+                }
+            }
+            return StyledRun(text: text, style: run.style)
+        }
     }
 
     /// Word-wraps runs into lines of at most `width` cells.
