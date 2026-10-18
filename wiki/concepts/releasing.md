@@ -70,3 +70,7 @@ actions (no release), `deps: bump …` for Swift dependencies (patch release).
   "GitHub Actions is not permitted to create or approve pull requests" until
   *Settings → Actions → Allow GitHub Actions to create and approve pull requests*
   is on (`can_approve_pull_request_reviews` in the workflow permissions API).
+- **Tags must be plain semver for SwiftPM.** release-please names tags
+  `<component>-<version>` by default (`stipple-0.1.0`), and SwiftPM ignores those.
+  `include-component-in-tag: false` (with `include-v-in-tag: false`) gives `0.1.0`.
+  The first release was re-tagged by hand.
