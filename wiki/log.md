@@ -10,3 +10,6 @@ Package, tooling copied from the backpressure setup, shared Core types, and the 
 
 ## [2026-10-18] update | Open-source and agent setup
 README, NOTICE, CONTRIBUTING, SECURITY, CHANGELOG stub, CI and issue templates adapted for a terminal library; wiki pages for backpressure, agent workflow, testing and releasing; decisions 0004–0007 (backpressure, LLM wiki, Apache 2.0 with Ink attribution, Conventional Commits).
+
+## [2026-10-18] update | Input module
+InputParser decodes stdin bytes into key, paste and focus events, with legacy, rxvt and kitty sequences and buffering across chunks. Ink deviations and gotchas are on the Input page.
