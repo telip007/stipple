@@ -62,6 +62,31 @@ public struct TerminalWriter {
     }
 }
 
+/// Gives the terminal to other code for a while, e.g. to run an editor or a
+/// shell, and redraws afterwards (Ink's `suspendTerminal`). Raw mode, the
+/// alternate screen and other modes are switched off during `body`.
+///
+/// ```swift
+/// @Environment(\.suspendTerminal) private var suspendTerminal
+/// try await suspendTerminal { try runEditor(file) }
+/// ```
+@MainActor
+public struct SuspendTerminalAction {
+    let handler: @MainActor (_ body: () async throws -> Void) async throws -> Void
+
+    /// Runs `body` with the terminal handed back to the user, and returns its result.
+    public func callAsFunction<T>(_ body: () async throws -> T) async throws -> T {
+        var result: Result<T, any Error>?
+        try await handler { result = .success(try await body()) }
+        guard let result else { return try await body() }
+        return try result.get()
+    }
+}
+
+struct SuspendTerminalKey: EnvironmentKey {
+    static var defaultValue: SuspendTerminalAction? { nil }
+}
+
 struct ExitActionKey: EnvironmentKey {
     static let defaultValue = ExitAction { _ in }
 }
@@ -87,6 +112,13 @@ extension EnvironmentValues {
     public var exit: ExitAction {
         get { self[ExitActionKey.self] }
         set { self[ExitActionKey.self] = newValue }
+    }
+
+    /// Hands the terminal to other code, e.g. a subprocess. Without a running
+    /// app it just runs the body.
+    @MainActor public var suspendTerminal: SuspendTerminalAction {
+        get { self[SuspendTerminalKey.self] ?? SuspendTerminalAction { try await $0() } }
+        set { self[SuspendTerminalKey.self] = newValue }
     }
 
     /// Moves focus programmatically.

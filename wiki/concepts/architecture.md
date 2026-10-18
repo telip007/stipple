@@ -146,7 +146,7 @@ the layout protocol and stacks, modifiers, `Static`, the render loop with
 | `borderStyle`, `borderColor` | `.border(.rounded, color: .cyan)` |
 | `backgroundColor` | `.background(.blue)` |
 | `overflow="hidden"` | `.clipped()` |
-| `position="absolute"` | `.overlay { }` / `ZStack` |
+| `position="absolute"` | `.overlay(alignment:) { }`, `.background(alignment:) { }`, `ZStack` |
 | `<Text color bold …>` | `Text("…").foregroundStyle(.green).bold().italic().underline().strikethrough().dim().inverse()` |
 | `wrap="truncate-end"` | `.lineLimit(1).truncationMode(.tail)` |
 | `<Newline/>` | `"\n"` inside `Text` |
@@ -162,7 +162,9 @@ the layout protocol and stacks, modifiers, `Static`, the render loop with
 | `useBoxMetrics`, `measureElement` | `GeometryReader`, `.onGeometryChange(for:of:action:)` |
 | `useAnimation` | `TimelineView(.periodic(every:))` |
 | `useCursor` | `.cursorPosition(_:)` |
-| `useIsScreenReaderEnabled` | `@Environment(\.isScreenReaderEnabled)`, `.accessibilityLabel(_:)` |
+| `useIsScreenReaderEnabled` | `@Environment(\.isScreenReaderEnabled)` (`STIPPLE_SCREEN_READER=true`) |
+| `aria-label`, `aria-hidden`, `aria-role`, `aria-state` | `.accessibilityLabel(_:)`, `.accessibilityHidden()`, `.accessibilityRole(_:)`, `.accessibilityState(_:)` |
+| `suspendTerminal` | `@Environment(\.suspendTerminal)`, then `try await suspendTerminal { … }` |
 | `useEffect` | `.task { }`, `.onAppear`, `.onDisappear`, `.onChange(of:)` |
 | `useState` / context | `@State`, `@Binding`, `@Observable` models, `.environment(_:)` |
 | `kittyKeyboard` option | `RenderOptions.keyboardProtocol` |

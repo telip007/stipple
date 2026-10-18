@@ -41,6 +41,15 @@ final class FakeTerminal: TerminalHost {
     func queryKittyKeyboard() { kittyQueried = true }
     func noteModes(alternateScreen: Bool, cursorHidden: Bool) { notedModes = (alternateScreen, cursorHidden) }
 
+    private(set) var suspensions = 0
+
+    func suspend<T>(_ body: () async throws -> T) async throws -> T {
+        suspensions += 1
+        output += "<suspended>"
+        defer { output += "</suspended>" }
+        return try await body()
+    }
+
     /// Plain text of the last frame drawn (escape codes removed, erased lines dropped).
     var lastFrame: String {
         let plain = output.replacing(/\u{1B}\[[0-9;?]*[A-Za-z]/, with: "\u{0}")

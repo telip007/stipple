@@ -25,11 +25,12 @@ struct NodeBehaviors {
     var focus: FocusRegistration?
     var geometryChange: [@MainActor (Rect) -> Void] = []
     var cursorPosition: Point?
-    var timeline: Duration?
+    var accessibility = AccessibilityInfo()
 
     var isEmpty: Bool {
         keyHandlers.isEmpty && pasteHandlers.isEmpty && onAppear.isEmpty && onDisappear.isEmpty && tasks.isEmpty
-            && focus == nil && geometryChange.isEmpty && cursorPosition == nil && timeline == nil
+            && focus == nil && geometryChange.isEmpty && cursorPosition == nil
+            && accessibility.label == nil && !accessibility.isHidden && accessibility.role == nil
     }
 }
 

@@ -82,6 +82,12 @@ pieces together in the same order as Ink's `ink.tsx` and `App.tsx`:
 5. `exit()` draws the final frame, finishes the writer, unmounts the graph
    (`onDisappear`, task cancellation), restores the terminal and resumes `waitUntilExit()`.
 
+Screen reader mode replaces the canvas with `ScreenReaderRenderer`, Ink's
+`renderNodeToScreenReaderOutput`: text as-is, horizontal stacks joined by spaces
+and everything else by newlines, labels replacing content, and roles and states
+as prefixes. A chain of accessibility modifier nodes is merged first, because
+Ink keeps every `aria-*` prop on one element.
+
 `TerminalHost` abstracts the terminal, so runtime tests drive a fake
 (`Tests/StippleTests/Runtime/FakeTerminal.swift`).
 

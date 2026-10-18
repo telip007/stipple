@@ -6,8 +6,10 @@ struct TextNodeLayout: NodeLayout {
     let lineLimit: Int?
     let truncationMode: TruncationMode
     let alignment: TextAlignment
+    let transform: (@MainActor (String, Int) -> String)?
 
     init(runs: [StyledRun], environment: EnvironmentValues) {
+        transform = environment.isScreenReaderEnabled ? nil : environment.textTransform
         self.runs = runs
         lineLimit = environment.lineLimit
         truncationMode = environment.truncationMode
@@ -44,7 +46,8 @@ struct TextNodeLayout: NodeLayout {
         for (row, line) in lines(width: frame.size.width).prefix(frame.size.height).enumerated() {
             let width = line.reduce(0) { $0 + TextMetrics.width(of: $1.text) }
             let offset = alignment.offset(width: width, in: frame.size.width)
-            canvas.write(line, at: Point(x: frame.minX + offset, y: frame.minY + row), clip: clip)
+            let drawn = transform.map { ANSIText.parse($0(ANSIText.encode(line), row)) } ?? line
+            canvas.write(drawn, at: Point(x: frame.minX + offset, y: frame.minY + row), clip: clip)
         }
     }
 }

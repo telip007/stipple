@@ -25,3 +25,6 @@ View/ViewBuilder, retained view graph with Observation tracking, @State/@Binding
 
 ## [2026-10-18] update | View-layer tests and fixes
 View-layer tests raised coverage from 84.7% to 96.9%. They exposed three bugs, now fixed: a final frame that missed state changed just before exit (synchronous invalidation queue), text with no minimum width, and flexible frames that ignored their ideal size.
+
+## [2026-10-18] update | Screen reader, overlays, text transform, suspend
+Added accessibility modifiers and screen reader rendering, `.overlay`/`.background` with views, `.textTransform` (Ink's `Transform`) and `@Environment(\.suspendTerminal)`.

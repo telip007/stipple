@@ -23,4 +23,6 @@ protocol TerminalHost: TerminalOutput {
     func noteModes(alternateScreen: Bool, cursorHidden: Bool)
     /// Writes to standard error.
     func writeError(_ text: String)
+    /// Gives the terminal to `body` (restoring cooked mode and every mode) and takes it back afterwards.
+    func suspend<T>(_ body: () async throws -> T) async throws -> T
 }

@@ -1,3 +1,5 @@
+import Foundation
+
 /// Drives one app: owns the view graph, the terminal and the frame writer,
 /// turns input into key events, and renders at most `maxFps` frames a second
 /// (Ink's `Ink` class and `App` component).
@@ -15,12 +17,15 @@ final class Runtime {
     private var lastRender: ContinuousClock.Instant?
     private var exitWaiters: [CheckedContinuation<Void, any Error>] = []
     private var exitResult: Result<Void, any Error>?
+    private var isSuspended = false
     private let clock = ContinuousClock()
 
     init(view: some View, options: RenderOptions, terminal: any TerminalHost) {
         self.terminal = terminal
         self.options = options
         rootView = view
+        isScreenReaderEnabled =
+            options.isScreenReaderEnabled ?? (ProcessInfo.processInfo.environment["STIPPLE_SCREEN_READER"] == "true")
         let interactive = options.interactive ?? terminal.isInteractive
         writer = FrameWriter(
             output: terminal,
@@ -36,6 +41,9 @@ final class Runtime {
     }
 
     var isInteractive: Bool { writer.interactive }
+
+    /// Whether frames are rendered as plain text for screen readers.
+    let isScreenReaderEnabled: Bool
 
     private func start(interactive: Bool) {
         if interactive {
@@ -69,8 +77,25 @@ final class Runtime {
             writeError: { [weak self] text in self?.writeErrorAbove(text) },
         )
         environment.terminalSize = terminal.size
-        environment.isScreenReaderEnabled = options.isScreenReaderEnabled ?? false
+        environment.suspendTerminal = SuspendTerminalAction { [weak self] body in
+            try await self?.suspendTerminal(body)
+        }
+        environment.isScreenReaderEnabled = isScreenReaderEnabled
         return environment
+    }
+
+    /// Hands the terminal to `body`, e.g. to run an editor, then redraws.
+    func suspendTerminal(_ body: () async throws -> Void) async throws {
+        writer.clear()
+        renderTask?.cancel()
+        renderTask = nil
+        isSuspended = true
+        defer {
+            isSuspended = false
+            writer.resized()
+            render()
+        }
+        try await terminal.suspend(body)
     }
 
     private func writeErrorAbove(_ text: String) {
@@ -147,36 +172,11 @@ final class Runtime {
 
     /// Rebuilds invalidated views, lays out, and writes the frame.
     func render() {
-        guard exitResult == nil else { return }
+        guard exitResult == nil, !isSuspended else { return }
         lastRender = clock.now
         let frame = produceFrame()
         writer.setCursorPosition(frame.cursor)
         writer.write(frame: frame.text, height: frame.height, staticOutput: frame.staticOutput)
-    }
-
-    struct ProducedFrame {
-        var text: String
-        var height: Int
-        var staticOutput: String
-        var cursor: CursorPosition?
-    }
-
-    func produceFrame() -> ProducedFrame {
-        let size = terminal.size
-        let height = writer.alternateScreen ? size.height : nil
-        var staticOutput = ""
-        var result = FrameRenderer.Result(frame: "", height: 0)
-        // Geometry readers and geometry callbacks may change state during
-        // layout; lay out again until the graph settles.
-        for _ in 0..<4 {
-            graph.flush()
-            staticOutput += graph.takeStaticOutput(width: size.width)
-            result = FrameRenderer(graph: graph).render(width: size.width, height: height)
-            graph.runGeometryCallbacks()
-            if !graph.hasPendingWork { break }
-        }
-        return ProducedFrame(
-            text: result.frame, height: result.height, staticOutput: staticOutput, cursor: graph.cursorPosition)
     }
 
     // MARK: Exit
