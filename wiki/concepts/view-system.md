@@ -87,6 +87,19 @@ pieces together in the same order as Ink's `ink.tsx` and `App.tsx`:
 
 ## Gotchas
 
+- **Invalidation is queued synchronously, not by a task hop.** Observation's
+  `onChange` fires on the mutating thread before the new value is stored. An
+  earlier version hopped to the main actor with a `Task`, so `count += 1;
+  exit()` drew the final frame without the change. Nodes now go into a
+  `Mutex`-protected `InvalidationQueue`, which every flush drains first
+  ([InvalidationQueue.swift](../../Sources/Stipple/State/InvalidationQueue.swift)).
+- **Text reports a real minimum width.** A proposal of width 0 is treated as
+  1, so text wraps down to a column per line. Otherwise stacks see the unwrapped
+  width as the minimum and starve higher-priority children.
+- **`.frame(idealWidth:)` answers ideal-size proposals.** With neither min nor
+  max set, a flexible frame returns its ideal size when asked for the ideal size
+  (`fixedSize()`), as in SwiftUI.
+
 - **Nested generic context types break inference.** `TimelineView.Context` nested
   in the generic `TimelineView<Content>` made `TimelineView(...) { context in … }`
   fail with "generic parameter 'Content' could not be inferred". SwiftUI uses a

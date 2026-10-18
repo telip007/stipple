@@ -22,3 +22,6 @@ Text metrics, wrapping, truncation, ANSI tokenizer and parser, SGR encoder, cell
 
 ## [2026-10-18] update | View system, runtime and examples
 View/ViewBuilder, retained view graph with Observation tracking, @State/@Binding/@Environment/@FocusState, two-pass layout (stacks, spacer, frame, padding, border, background, clip, offset), Text, Static, GeometryReader, TimelineView, key/paste/focus dispatch, throttled runtime and three examples verified end to end in a pty.
+
+## [2026-10-18] update | View-layer tests and fixes
+View-layer tests raised coverage from 84.7% to 96.9%. They exposed three bugs, now fixed: a final frame that missed state changed just before exit (synchronous invalidation queue), text with no minimum width, and flexible frames that ignored their ideal size.

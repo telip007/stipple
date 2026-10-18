@@ -9,11 +9,24 @@ final class ViewGraph {
     private var afterFlush: [@MainActor () -> Void] = []
     private var runningTasks: [ObjectIdentifier: [(id: AnyHashable?, task: Task<Void, Never>)]] = [:]
     let focus = FocusController()
+    /// Nodes whose observed values changed, possibly reported off the main actor.
+    let invalidations = InvalidationQueue()
 
     /// Called when something needs a new frame.
     var onNeedsRender: @MainActor () -> Void = {}
 
-    init() {}
+    init() {
+        invalidations.onEnqueue = { [weak self] in
+            Task { @MainActor in self?.drainInvalidations() }
+        }
+    }
+
+    /// Marks every node reported by observation as dirty.
+    func drainInvalidations() {
+        for node in invalidations.drain() {
+            node.invalidate()
+        }
+    }
 
     /// Builds the graph for `view`.
     func mount(_ view: some View, environment: EnvironmentValues) {
@@ -46,6 +59,7 @@ final class ViewGraph {
     /// Returns whether anything was rebuilt.
     @discardableResult
     func flush() -> Bool {
+        drainInvalidations()
         guard !pendingRebuilds.isEmpty else { return false }
         let pending = pendingRebuilds.sorted { $0.depth < $1.depth }
         pendingRebuilds.removeAll()
@@ -56,7 +70,7 @@ final class ViewGraph {
         return true
     }
 
-    var hasPendingWork: Bool { !pendingRebuilds.isEmpty }
+    var hasPendingWork: Bool { !pendingRebuilds.isEmpty || !invalidations.isEmpty }
 
     /// Runs `action` after the current update's rebuilds and callbacks.
     func enqueueAfterFlush(_ action: @escaping @MainActor () -> Void) {

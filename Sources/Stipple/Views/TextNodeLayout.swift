@@ -31,7 +31,8 @@ struct TextNodeLayout: NodeLayout {
 
     func sizeThatFits(_ proposal: ProposedSize, node: ViewNode) -> Size {
         guard runs.contains(where: { !$0.text.isEmpty }) else { return .zero }
-        let lines = lines(width: proposal.width)
+        // Text can always shrink to one column per line, so stacks see a real minimum.
+        let lines = lines(width: proposal.width.map { max(1, $0) })
         let width = lines.map { line in line.reduce(0) { $0 + TextMetrics.width(of: $1.text) } }.max() ?? 0
         return Size(width: width, height: lines.count)
     }

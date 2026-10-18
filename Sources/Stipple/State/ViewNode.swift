@@ -82,8 +82,9 @@ final class ViewNode {
     /// change to any of them invalidates the node.
     func evaluateTracked(installing owner: some Any, _ build: () -> any View) -> any View {
         installDynamicProperties(of: owner)
+        let graph = graph
         return withObservationTracking(build) { [weak self] in
-            Task { @MainActor in self?.invalidate() }
+            graph.invalidations.enqueue(self)
         }
     }
 

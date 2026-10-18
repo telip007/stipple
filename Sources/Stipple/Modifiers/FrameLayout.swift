@@ -22,7 +22,7 @@ struct FrameLayout: SingleChildLayout {
             switch self {
             case .fixed(let length): return length ?? child
             case .flexible(let min, let ideal, let max):
-                guard min != nil || max != nil else { return child }
+                guard min != nil || max != nil else { return proposed == nil ? ideal ?? child : child }
                 let lower = min ?? Swift.min(child, max ?? child)
                 let upper = Swift.max(max ?? Swift.max(child, lower), lower)
                 return Swift.min(upper, Swift.max(lower, proposed ?? ideal ?? child))
