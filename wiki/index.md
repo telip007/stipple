@@ -10,6 +10,7 @@ Start here. Conventions: [SCHEMA.md](SCHEMA.md). Timeline: [log.md](log.md).
 - [Rendering](concepts/rendering.md): text measurement, wrapping and truncation, ANSI parsing, the cell canvas, borders and SGR encoding.
 - [Output](concepts/output.md): how frames reach the terminal: log-update, static output, alternate screen, non-interactive and debug modes.
 - [View system](concepts/view-system.md): view, ViewBuilder, the view graph, state, environment, layout, modifiers and the render loop.
+- [Components](concepts/components.md): built-in controls made only from the public view API, starting with TextField and SecureField.
 - [Backpressure setup](concepts/backpressure-setup.md): every automated check in this repository, where it runs, and the traps hit while wiring it up.
 - [Testing](concepts/testing.md): how tests are structured, testing terminal code without a tty, README example tests and the coverage gate.
 - [Releasing](concepts/releasing.md): Conventional Commits, release-please release PRs, SemVer bumps and Dependabot updates.

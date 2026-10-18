@@ -34,3 +34,6 @@ Removed `Output/DisplayWidth.swift`; the line diff measures columns with `TextMe
 
 ## [2026-10-18] update | Output screen-reader mode
 Added `FrameWriterOptions.screenReader`: whole-frame rewrite, wrapped to the terminal width with `TextLayout.wrap`, cursor never shown or hidden. Ported from the `isScreenReaderEnabled` branches of `ink.tsx`. Byte-exact tests in `ScreenReaderTests.swift`.
+
+## [2026-10-18] update | TextField and SecureField
+Single-line text inputs built from the public view API: focus through `.focusable` and `@FocusState`, `.onSubmit`, readline-style editing, a caret that is inverse and drives `.cursorPosition`, and masked secure entry. Gotchas on the Components page.
