@@ -18,14 +18,13 @@ here: the runtime decides how often to call the writer.
 | File | Ink source | Role |
 | --- | --- | --- |
 | `FrameWriter.swift` | `ink.tsx`: `onRender`, `resized`, `clear`, `writeToStdout`, unmount | Public surface: `write`, `resized`, `setCursorPosition`, `writeAbove`, `clear`, `finish`, `staticChanged` |
-| `FrameWriter+Frame.swift` | `renderFrame`, `renderInteractiveFrame` | Debug, non-interactive and interactive frame drawing, full clear, static output |
+| `FrameWriter+Frame.swift` | `renderFrame`, `renderInteractiveFrame`, screen-reader branch | Debug, non-interactive, screen-reader and interactive frame drawing, full clear, static output |
 | `FrameWriterOptions.swift` | `render()` options | `alternateScreen`, `incremental`, `debug`, `interactive`, `showCursor` |
 | `FullClear.swift` | `shouldClearTerminalForFrame` | Pure decision: diff in place or clear first |
 | `LogUpdate.swift` | `log-update.ts` | Standard and incremental live-frame rewriting, cursor state |
 | `LineUpdate.swift` | `line-update.ts` | Repaint one changed line from its first differing column |
 | `CursorHelpers.swift` | `cursor-helpers.ts` | Cursor suffix, return-to-bottom, cursor-only and erase sequences |
 | `Escape.swift` | `ansi-escapes` | Byte-identical sequence builders |
-| `DisplayWidth.swift` | `string-width` | Column width for the line diff (see Gotchas) |
 
 ## How a frame is written
 
@@ -51,6 +50,23 @@ skipped for a live write that changes nothing.
 
 Frames taller than the viewport (`height >= rows`) have no trailing newline,
 so the cursor stays on the last row. Shorter frames end with one.
+
+### Screen-reader mode
+
+`screenReader: true` (the runtime sets it from `RenderOptions.isScreenReaderEnabled`)
+replaces the in-place diff with a whole-frame rewrite. It is Ink's
+`isScreenReaderEnabled` branch. The order is debug, then non-interactive, then
+screen reader, then interactive. In this mode:
+
+- The frame is wrapped to the terminal width with `TextLayout.wrap` (hard
+  breaks, spaces kept at the break). Each wrapped line is re-encoded with
+  `ANSIText.encode`, so each line opens and closes its own styles.
+- An unchanged frame with no static output writes nothing except the
+  synchronized-update brackets. Ink does the same.
+- Otherwise the previous frame is erased, `<Static>` output is written, the
+  wrapped frame is written, and `LogUpdate` is synced with no cursor. The cursor
+  is never shown or hidden.
+- `writeAbove` redraws the wrapped frame without cursor placement.
 
 ### Console output while rendering
 
@@ -117,13 +133,18 @@ Every sequence the module writes, with the `ansi-escapes` name and the
   writer produces. They can differ for `\r\n`, which Swift counts as one
   `Character`. `splitLines` splits on the `\n` scalar only, so `\r\n` still
   splits as Ink does.
-- **`DisplayWidth` is a stand-in.** It is an approximation of `string-width`
-  (East Asian wide, emoji presentation, combining marks). It exists so the
-  Output module stays self-contained. It should be replaced by
-  `TextMetrics.width(of:)` from `Render/` once that is the shared measure.
+- **Column widths come from `TextMetrics`.** The line diff measures the
+  unchanged prefix with `TextMetrics.width(of:)` (`Render/TextMetrics.swift`),
+  the same measure the canvas uses. A second width function would let the diff
+  and the canvas disagree about where the cursor is, so do not add one.
 - **Windows console behaviour is not ported.** Ink clears every fullscreen frame
   on Windows (`isWindowsConsole`) because the console scrolls on the bottom-right
   write. Stipple targets macOS and Linux only, so that branch is absent.
+- **Screen-reader frames are re-encoded.** The frame goes through
+  `ANSIText.parse` and `encode`, so its escape bytes can differ from the input
+  even when the text is the same. The wrapping is `TextLayout.wrap`'s, including
+  its break rule: `"hello world"` at width 5 is `hello`, a line holding one
+  space, and `world`.
 - **Empty writes are skipped.** The module never calls `write("")`, so tests
   can assume every recorded write is non-empty.
 - **Unmount needs the final frame passed in.** Ink's unmount renders once more

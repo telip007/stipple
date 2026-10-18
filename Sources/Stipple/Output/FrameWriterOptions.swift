@@ -14,6 +14,9 @@ struct FrameWriterOptions: Equatable, Sendable {
     var interactive: Bool?
     /// Keep the cursor visible while rendering.
     var showCursor = false
+    /// Screen-reader mode: wrap the frame to the terminal width and rewrite it whole,
+    /// with no cursor movement. Ink's `isScreenReaderEnabled`.
+    var screenReader = false
 
     /// Creates the default options: inline, not debug, not alternate screen.
     init(
@@ -21,12 +24,14 @@ struct FrameWriterOptions: Equatable, Sendable {
         incremental: Bool = false,
         debug: Bool = false,
         interactive: Bool? = nil,
-        showCursor: Bool = false
+        showCursor: Bool = false,
+        screenReader: Bool = false
     ) {
         self.alternateScreen = alternateScreen
         self.incremental = incremental
         self.debug = debug
         self.interactive = interactive
         self.showCursor = showCursor
+        self.screenReader = screenReader
     }
 }
