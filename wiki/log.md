@@ -79,3 +79,6 @@ Under `RenderOptions.mouseReporting` on the alternate screen: a left press focus
 
 ## [2026-10-18] update | Head truncation keeps the last lines
 `.lineLimit(n)` with `.truncationMode(.head)` now keeps the last `n` wrapped lines, with `…` at the start of the first, instead of the first `n`. It matches SwiftUI and lets a view show the live tail of growing text.
+
+## [2026-10-19] update | Retained layout across frames
+Frames now cost what changed instead of the whole tree: sizes, wrapped text lines and `layoutChildren` are kept until a node below rebuilds, pure subtrees keep or move their placement, off-screen text isn't drawn, tree walks don't build arrays, and an `Equatable` view equal to its last value in an identical environment skips its update. Environment identity is a revision token; scroll position bindings compare by their `@State`. A scroll view's ideal height is its content's ideal height. See [view system](concepts/view-system.md#retained-layout).

@@ -79,8 +79,13 @@ final class FocusController {
         focus(enabled[(index + step + enabled.count) % enabled.count])
     }
 
-    private static func collectFocusables(_ node: ViewNode) -> [ViewNode] {
-        let own = node.behaviors.focus == nil ? [] : [node]
-        return own + node.children.flatMap(collectFocusables)
+    private static func collectFocusables(_ root: ViewNode) -> [ViewNode] {
+        var nodes: [ViewNode] = []
+        root.visit { node in
+            if node.behaviors.focus != nil {
+                nodes.append(node)
+            }
+        }
+        return nodes
     }
 }

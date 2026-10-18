@@ -110,7 +110,7 @@ extension Runtime {
     /// Turns motion reporting on while some view has an `onHover` handler.
     func syncMouseMotion() {
         guard options.mouseReporting, let root = graph.root else { return }
-        terminal.setMouseMotionReporting(ViewGraph.allNodes(in: root).contains { !$0.behaviors.hoverHandlers.isEmpty })
+        terminal.setMouseMotionReporting(root.containsNode { !$0.behaviors.hoverHandlers.isEmpty })
     }
 
     private func finishClick(at location: Point) {

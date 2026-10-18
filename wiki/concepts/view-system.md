@@ -1,7 +1,7 @@
 ---
 title: View system
 summary: View, ViewBuilder, the view graph, state, environment, layout, modifiers, scrolling, mouse routing and the render loop.
-updated: 2026-10-18
+updated: 2026-10-19
 ---
 
 # View system
@@ -35,6 +35,19 @@ The code lives in `Views/`, `State/`, `Layout/`, `Modifiers/` and `Runtime/`.
   ([ViewNode.swift](../../Sources/Stipple/State/ViewNode.swift)).
 - Reconciliation matches children by explicit id (`ForEach`), or by position,
   plus the view's type. Matching nodes are updated and the rest are mounted or unmounted.
+- An update is skipped when the node isn't dirty, the view is `Equatable` and
+  equal to the current one, and the environment is identical
+  (`EnvironmentValues.isIdentical(to:)`). The subtree keeps its nodes, its
+  observation and its cached layout. This is what lets a long list rebuild
+  without rebuilding every row: make the row view `Equatable` (as SwiftUI does
+  with `EquatableView`). `Text` is `Equatable`.
+- Environment identity is a revision token. Setting a value derives the next
+  revision, and setting an equal value on the same revision again derives the
+  same one, so a modifier that rebuilds hands its children an identical
+  environment. Values that aren't `Equatable` (closures, bindings) always make
+  a new revision; the scroll position binding is stored as
+  `BoundScrollPosition`, equal for bindings of the same `@State`
+  (`Binding.source`).
 - Dynamic properties (`@State`, `@Environment`, `@FocusState`) contain a
   reference-typed link. `Mirror` sees copies of the property, but the copies
   share the link, so installing into a copy connects the view's own property
@@ -47,7 +60,9 @@ The code lives in `Views/`, `State/`, `Layout/`, `Modifiers/` and `Runtime/`.
 SwiftUI's two-pass model ([decision 0002](../decisions/0002-two-pass-layout.md)):
 
 - `NodeLayout.sizeThatFits(_:node:)` and `placeChildren(of:in:proposal:)`.
-  Sizes are cached per pass and proposal. A `nil` dimension in `ProposedSize`
+  Sizes are cached per proposal across frames, and a rebuild clears the cache
+  of the node and its ancestors (see [Retained layout](#retained-layout)).
+  A `nil` dimension in `ProposedSize`
   asks for the ideal size. `Int.infinity` (2³²) asks for the maximum and is
   small enough that sums can't overflow.
 - Nodes without a layout are transparent: groups, composite views and
@@ -74,6 +89,37 @@ SwiftUI's two-pass model ([decision 0002](../decisions/0002-two-pass-layout.md))
 - `GeometryReader` writes its size into node storage after placement and
   invalidates itself if the size changed. The runtime repeats the
   flush, layout and geometry-callback loop up to four times per frame.
+
+## Retained layout
+
+Each frame lays out the whole tree, so the work a frame does has to be
+proportional to what changed, not to the size of the tree. A transcript of a
+few hundred blocks went from about a second per frame (debug build) to a few
+milliseconds with these:
+
+- **Sizes** live in `ViewNode.sizeCache` until the node or a node below it
+  rebuilds. Layouts are values set on rebuild, so nothing else can change a
+  size. `invalidateSizes()` walks up and stops at an empty cache on a node
+  with a layout; transparent nodes never stop it, because parents measure
+  through them (`layoutChildren`) and leave their caches empty.
+- **Wrapped text**: `TextNodeLayout` keeps its lines and size per width in a
+  `LineCache`, so measuring, placing and drawing wrap once per width. Text
+  outside the clip isn't drawn.
+- **Placement** is skipped when nothing below a node rebuilt, its proposal is
+  the same, and the last placement used only layouts with
+  `NodeLayout.placesPurely`. When only the origin changed, the subtree's frames
+  are moved. Scroll views, geometry readers, text fields and `Static` read
+  state or have effects while placing, so they and their ancestors are placed
+  every frame; pure content inside them is not. A new layout that reads state
+  in `placeChildren` must keep `placesPurely` false.
+- **`layoutChildren`** is cached until the node or one below it rebuilds.
+- **Tree walks** (geometry callbacks, the cursor, focus, global keys, mouse
+  motion) visit nodes in place (`ViewNode.visit`) instead of concatenating
+  arrays at every level.
+- **A scroll view's ideal size** is its content's ideal size. Measuring the
+  height again at the ideal width gave the same rows, but at a width that
+  changed with the widest line, so every row was laid out again whenever a
+  long line grew.
 
 ## Scrolling
 
@@ -171,6 +217,10 @@ Ink keeps every `aria-*` prop on one element.
 (`Tests/StippleTests/Runtime/FakeTerminal.swift`).
 
 ## Gotchas
+
+- An `Equatable` view whose `==` ignores something its body shows will not
+  update when only that changes. Compare everything the body reads that isn't
+  observed.
 
 - **Reading a binding in a primitive's `update` isn't tracked.** Only composite
   bodies (and custom modifiers) run inside `withObservationTracking`. A

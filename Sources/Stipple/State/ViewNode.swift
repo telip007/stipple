@@ -16,6 +16,9 @@ final class ViewNode {
     private(set) var children: [ViewNode] = []
     private var childKeys: [ChildKey] = []
     private var storage: [Int: AnyObject] = [:]
+    /// Sizes by proposal, kept across frames until the node or a node below
+    /// it rebuilds: layouts are values set on rebuild, so a size can only
+    /// change when the subtree does.
     private var sizeCache: [ProposedSize: Size] = [:]
 
     /// How this node lays out and draws; `nil` for transparent nodes.
@@ -30,6 +33,13 @@ final class ViewNode {
     private(set) var frame = Rect(x: 0, y: 0, width: 0, height: 0)
     /// The proposal the node was placed with in the last layout pass.
     private(set) var placementProposal = ProposedSize.unspecified
+    /// Whether this node or one below it rebuilt since it was last placed.
+    private var needsPlacement = true
+    /// Whether the last placement of this subtree used only pure layouts
+    /// (``NodeLayout/placesPurely``), so it can be kept or moved as it is.
+    private var placedPurely = false
+    /// ``layoutChildren``, until this node or one below it rebuilds.
+    private var cachedLayoutChildren: [ViewNode]?
     private(set) var isMounted = true
     var isDirty = false
     let depth: Int
@@ -52,8 +62,14 @@ final class ViewNode {
 
     // MARK: Building
 
-    /// Gives the node a new view value and environment from its parent and rebuilds it.
+    /// Gives the node a new view value and environment from its parent and
+    /// rebuilds it. An `Equatable` view equal to the current one, in the same
+    /// environment, keeps its subtree: nothing it shows can have changed
+    /// unless it was invalidated.
     func update(view: any View, environment: EnvironmentValues) {
+        if !isDirty, environment.isIdentical(to: self.environment), areEqual(self.view, view) {
+            return
+        }
         self.view = view
         self.environment = environment
         rebuild()
@@ -62,6 +78,8 @@ final class ViewNode {
     /// Re-evaluates the node's view and reconciles its children.
     func rebuild() {
         isDirty = false
+        invalidateSizes()
+        invalidatePlacement()
         layout = nil
         layoutPriority = 0
         let previousBehaviors = behaviors
@@ -139,10 +157,13 @@ final class ViewNode {
     /// The nodes that take part in this node's layout: children with a
     /// layout, and the layout children of transparent children.
     var layoutChildren: [ViewNode] {
-        children.flatMap { $0.layout == nil ? $0.layoutChildren : [$0] }
+        if let cachedLayoutChildren { return cachedLayoutChildren }
+        let nodes = children.flatMap { $0.layout == nil ? $0.layoutChildren : [$0] }
+        cachedLayoutChildren = nodes
+        return nodes
     }
 
-    /// The size this node wants for `proposal`; cached per layout pass.
+    /// The size this node wants for `proposal`; cached until the subtree rebuilds.
     func sizeThatFits(_ proposal: ProposedSize) -> Size {
         if let cached = sizeCache[proposal] { return cached }
         let size =
@@ -152,21 +173,58 @@ final class ViewNode {
     }
 
     /// Places the node at `origin` with the size it wants for `proposal`.
+    /// A pure subtree that didn't change keeps its placement, moved to
+    /// `origin` if it has to be.
     func place(at origin: Point, proposal: ProposedSize) {
+        if !needsPlacement, placedPurely, proposal == placementProposal {
+            if origin != frame.origin {
+                move(by: Point(x: origin.x - frame.minX, y: origin.y - frame.minY))
+            }
+            return
+        }
         frame = Rect(origin: origin, size: sizeThatFits(proposal))
         placementProposal = proposal
+        let children = layoutChildren
         if let layout {
             layout.placeChildren(of: self, in: frame, proposal: proposal)
         } else {
-            ChildGroup(nodes: layoutChildren).place(at: origin, proposal: proposal)
+            ChildGroup(nodes: children).place(at: origin, proposal: proposal)
+        }
+        needsPlacement = false
+        placedPurely = (layout?.placesPurely ?? true) && children.allSatisfy(\.placedPurely)
+    }
+
+    /// Moves this subtree's frames by `delta`.
+    private func move(by delta: Point) {
+        frame = Rect(origin: Point(x: frame.minX + delta.x, y: frame.minY + delta.y), size: frame.size)
+        for child in children {
+            child.move(by: delta)
         }
     }
 
-    /// Forgets cached sizes in this subtree before a new layout pass.
-    func resetLayoutCache() {
-        sizeCache.removeAll(keepingCapacity: true)
-        for child in children {
-            child.resetLayoutCache()
+    /// Marks this node and its ancestors for placing again and forgets their
+    /// layout children, which may include this node's. The walk goes to the
+    /// root: transparent nodes are never placed themselves, so their mark
+    /// stays set and can't end it.
+    private func invalidatePlacement() {
+        var node: ViewNode? = self
+        while let current = node {
+            current.needsPlacement = true
+            current.cachedLayoutChildren = nil
+            node = current.parent
+        }
+    }
+
+    /// Forgets the cached sizes of this node and of its ancestors, whose
+    /// sizes depend on it. An empty cache on a node with a layout ends the
+    /// walk: sizes above it were either forgotten with it or computed without
+    /// asking it. Transparent nodes don't end it, as parents measure through
+    /// them (``layoutChildren``) and leave their caches empty.
+    private func invalidateSizes() {
+        var node: ViewNode? = self
+        while let current = node, current.layout == nil || !current.sizeCache.isEmpty {
+            current.sizeCache.removeAll()
+            node = current.parent
         }
     }
 

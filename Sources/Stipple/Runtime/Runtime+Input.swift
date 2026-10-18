@@ -122,8 +122,7 @@ extension ViewGraph {
 
     /// Calls geometry-change callbacks with each node's latest frame.
     func runGeometryCallbacks() {
-        guard let root else { return }
-        for node in Self.allNodes(in: root) {
+        root?.visit { node in
             for callback in node.behaviors.geometryChange {
                 callback(node.frame)
             }
@@ -132,25 +131,52 @@ extension ViewGraph {
 
     /// Where the terminal cursor should rest: the last `.cursorPosition(_:)` in tree order.
     var cursorPosition: CursorPosition? {
-        guard let root else { return nil }
-        guard let node = Self.allNodes(in: root).last(where: { $0.behaviors.cursorPosition != nil }),
-            let point = node.behaviors.cursorPosition
-        else { return nil }
+        var last: ViewNode?
+        root?.visit { node in
+            if node.behaviors.cursorPosition != nil { last = node }
+        }
+        guard let node = last, let point = node.behaviors.cursorPosition else { return nil }
         return CursorPosition(x: node.frame.minX + point.x, y: node.frame.minY + point.y)
     }
 
     private static func globalNodes(in node: ViewNode, insideFocusable: Bool) -> [ViewNode] {
-        let inside = insideFocusable || node.behaviors.focus != nil
-        let own = inside || node.behaviors.keyHandlers.isEmpty ? [] : [node]
-        return own + node.children.flatMap { globalNodes(in: $0, insideFocusable: inside) }
+        var nodes: [ViewNode] = []
+        collectGlobalNodes(in: node, insideFocusable: insideFocusable, into: &nodes)
+        return nodes
     }
 
+    private static func collectGlobalNodes(in node: ViewNode, insideFocusable: Bool, into nodes: inout [ViewNode]) {
+        let inside = insideFocusable || node.behaviors.focus != nil
+        if !inside, !node.behaviors.keyHandlers.isEmpty {
+            nodes.append(node)
+        }
+        for child in node.children {
+            collectGlobalNodes(in: child, insideFocusable: inside, into: &nodes)
+        }
+    }
+
+    /// `node` and every node below it, in tree order.
     static func allNodes(in node: ViewNode) -> [ViewNode] {
-        [node] + node.children.flatMap(allNodes)
+        var nodes: [ViewNode] = []
+        node.visit { nodes.append($0) }
+        return nodes
     }
 }
 
 extension ViewNode {
+    /// Calls `body` with this node and every node below it, in tree order.
+    func visit(_ body: (ViewNode) -> Void) {
+        body(self)
+        for child in children {
+            child.visit(body)
+        }
+    }
+
+    /// Whether this node or one below it satisfies `predicate`.
+    func containsNode(where predicate: (ViewNode) -> Bool) -> Bool {
+        predicate(self) || children.contains { $0.containsNode(where: predicate) }
+    }
+
     /// Whether this node or an ancestor is focusable.
     var isInsideFocusable: Bool {
         var current: ViewNode? = self

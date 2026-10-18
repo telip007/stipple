@@ -63,7 +63,8 @@ public struct State<Value>: DynamicPropertyLink {
     public var projectedValue: Binding<Value> {
         let link = link
         let initialValue = initialValue
-        return Binding(get: { link.box?.value ?? initialValue }, set: { link.box?.value = $0 })
+        return Binding(
+            get: { link.box?.value ?? initialValue }, set: { link.box?.value = $0 }, source: ObjectIdentifier(link))
     }
 
     func install(in node: ViewNode, index: Int) {

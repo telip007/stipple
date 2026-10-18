@@ -5,11 +5,25 @@
 public struct Binding<Value> {
     private let getter: @MainActor () -> Value
     private let setter: @MainActor (Value) -> Void
+    /// The storage the binding reads and writes, when known (a `@State`'s):
+    /// bindings with the same source are the same binding. The getter keeps
+    /// the storage alive, so the identifier can't be reused meanwhile.
+    nonisolated let source: ObjectIdentifier?
 
     /// Creates a binding from a getter and a setter.
     public init(get: @escaping @MainActor () -> Value, set: @escaping @MainActor (Value) -> Void) {
+        self.init(get: get, set: set, source: nil)
+    }
+
+    init(get: @escaping @MainActor () -> Value, set: @escaping @MainActor (Value) -> Void, source: ObjectIdentifier?) {
         getter = get
         setter = set
+        self.source = source
+    }
+
+    /// Whether `other` is known to read and write the same storage.
+    nonisolated func hasSameSource(as other: Self) -> Bool {
+        source != nil && source == other.source
     }
 
     /// Unwraps a binding passed to a view's initializer: `self._value = value`.

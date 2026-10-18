@@ -165,7 +165,18 @@ struct ScrollIndicatorVisibilityKey: EnvironmentKey {
 }
 
 struct ScrollPositionBindingKey: EnvironmentKey {
-    static let defaultValue: Binding<ScrollPosition>? = nil
+    static let defaultValue: BoundScrollPosition? = nil
+}
+
+/// A scroll position binding as the environment holds it: equal to another
+/// binding of the same state, so rebuilding `.scrollPosition($position)`
+/// keeps the environment, and the views inside, unchanged.
+struct BoundScrollPosition: Equatable {
+    let binding: Binding<ScrollPosition>
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.binding.hasSameSource(as: rhs.binding)
+    }
 }
 
 struct ScrollOnPageKeysKey: EnvironmentKey {
@@ -185,8 +196,8 @@ extension EnvironmentValues {
     }
 
     var scrollPositionBinding: Binding<ScrollPosition>? {
-        get { self[ScrollPositionBindingKey.self] }
-        set { self[ScrollPositionBindingKey.self] = newValue }
+        get { self[ScrollPositionBindingKey.self]?.binding }
+        set { self[ScrollPositionBindingKey.self] = newValue.map(BoundScrollPosition.init) }
     }
 
     var scrollOnPageKeys: Bool {

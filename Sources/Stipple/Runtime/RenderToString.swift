@@ -38,7 +38,6 @@ struct FrameRenderer {
 
     func render(width: Int, height: Int?) -> Result {
         guard let root = graph.root else { return Result(frame: "", height: 0) }
-        root.resetLayoutCache()
         let proposal = ProposedSize(width: width, height: height)
         let size = root.sizeThatFits(proposal)
         root.place(at: .zero, proposal: proposal)

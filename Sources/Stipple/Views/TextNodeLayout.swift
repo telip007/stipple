@@ -8,6 +8,10 @@ struct TextNodeLayout: NodeLayout {
     let alignment: TextAlignment
     let transform: (@MainActor (String, Int) -> String)?
     let wrapping: TextWrapping
+    /// Laid-out lines by width. A layout lives until its node rebuilds, and
+    /// a frame asks for the same width several times (measuring, placing,
+    /// drawing), so wrapping runs once per width instead.
+    private let cache = LineCache()
 
     init(runs: [StyledRun], environment: EnvironmentValues) {
         transform = environment.isScreenReaderEnabled ? nil : environment.textTransform
@@ -19,6 +23,13 @@ struct TextNodeLayout: NodeLayout {
     }
 
     func lines(width: Int?) -> [[StyledRun]] {
+        if let cached = cache.lines[width] { return cached }
+        let lines = layOut(width: width)
+        cache.lines[width] = lines
+        return lines
+    }
+
+    private func layOut(width: Int?) -> [[StyledRun]] {
         let hardLines = TextLayout.lines(runs)
         // Width 0 means "no constraint" for wrapping, as wrap-ansi treats 0 columns (Ink parity).
         guard let width, width > 0 else { return Array(hardLines.prefix(lineLimit ?? .max)) }
@@ -48,15 +59,20 @@ struct TextNodeLayout: NodeLayout {
 
     func sizeThatFits(_ proposal: ProposedSize, node: ViewNode) -> Size {
         guard runs.contains(where: { !$0.text.isEmpty }) else { return .zero }
+        if let cached = cache.sizes[proposal.width] { return cached }
         let lines = lines(width: proposal.width)
         let width = lines.map { line in line.reduce(0) { $0 + TextMetrics.width(of: $1.text) } }.max() ?? 0
-        return Size(width: width, height: lines.count)
+        let size = Size(width: width, height: lines.count)
+        cache.sizes[proposal.width] = size
+        return size
     }
 
     func placeChildren(of node: ViewNode, in bounds: Rect, proposal: ProposedSize) {}
 
     func draw(_ node: ViewNode, into canvas: inout Canvas, clip: Rect) {
         let frame = node.frame
+        // Text scrolled out of view costs nothing to draw.
+        guard frame.minY < clip.maxY, frame.maxY > clip.minY else { return }
         // Lay out with the proposal the text was measured with: truncation and
         // wrapping are not idempotent, so re-running them at the measured width can differ.
         for (row, line) in lines(width: node.placementProposal.width).prefix(frame.size.height).enumerated() {
@@ -66,6 +82,13 @@ struct TextNodeLayout: NodeLayout {
             canvas.write(drawn, at: Point(x: frame.minX + offset, y: frame.minY + row), clip: clip)
         }
     }
+}
+
+/// The lines and sizes one ``TextNodeLayout`` worked out, by width.
+@MainActor
+private final class LineCache {
+    var lines: [Int?: [[StyledRun]]] = [:]
+    var sizes: [Int?: Size] = [:]
 }
 
 extension TextNodeLayout {

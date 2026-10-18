@@ -161,17 +161,19 @@ struct ScrollLayout: NodeLayout {
 
     func sizeThatFits(_ proposal: ProposedSize, node: ViewNode) -> Size {
         let group = content(of: node)
-        let width: Int
-        if let proposed = proposal.width, proposed < .infinity {
-            width = proposed
-        } else {
-            let ideal = group.sizeThatFits(ProposedSize(width: proposal.width, height: nil)).width
-            width = indicators == .visible ? ideal + 1 : ideal
+        guard let proposed = proposal.width, proposed < .infinity else {
+            // The content's ideal size, height included: measuring the height
+            // again at the ideal width would give the same rows, but at a
+            // width that changes whenever the widest line does, so every row
+            // would be laid out again.
+            let ideal = group.sizeThatFits(ProposedSize(width: proposal.width, height: nil))
+            let width = indicators == .visible ? ideal.width + 1 : ideal.width
+            return Size(width: width, height: proposal.height ?? ideal.height)
         }
         if let height = proposal.height {
-            return Size(width: width, height: height)
+            return Size(width: proposed, height: height)
         }
-        return Size(width: width, height: group.sizeThatFits(ProposedSize(width: width, height: nil)).height)
+        return Size(width: proposed, height: group.sizeThatFits(ProposedSize(width: proposed, height: nil)).height)
     }
 
     /// The width the content gets, and whether the indicator takes the column next to it.
