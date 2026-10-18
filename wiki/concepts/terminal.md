@@ -57,9 +57,12 @@ echo and a hidden cursor.
   writes `?1006l?1000l` before the screen modes, so crash recovery, Ctrl-Z and
   `suspend(_:)` undo it like every other mode. While it is on, a plain drag
   goes to the app; users hold Shift (Option in some macOS terminals) to select
-  text. That is why `RenderOptions.mouseReporting` defaults to off. Only
-  `?1000` is used: no drag (`?1002`) or motion (`?1003`) reports, so the
-  terminal doesn't flood stdin.
+  text. That is why `RenderOptions.mouseReporting` defaults to off. Motion
+  reports (`?1003`, for `.onHover`) are a separate mode,
+  `setMouseMotionReporting(_:)`, switched on only while a hover handler
+  exists, because they flood stdin while the pointer moves. In xterm,
+  `?1003l` stops *all* mouse tracking, so switching motion off writes
+  `?1003l?1000h` while button reports stay on.
 
 - The frame writer, not `Terminal`, switches the alternate screen and hides the
   cursor. The runtime reports those modes with `noteModes(alternateScreen:cursorHidden:)`

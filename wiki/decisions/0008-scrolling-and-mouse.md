@@ -40,9 +40,15 @@ terminal sends drags to the app, so text selection needs a modifier key.
 - **Mouse reporting is opt-in** (`RenderOptions.mouseReporting`, default off),
   uses `?1000` with SGR `?1006` only (no drag or motion reports), and is a
   `TerminalModes` member, so restore, crash recovery and Ctrl-Z undo it.
+- **Real mouse control behind the same option**: a left press focuses the
+  focusable view under the pointer, `.onTapGesture(count:perform:)` handles
+  clicks and double-clicks (innermost handler per count wins),
+  `.onHover(perform:)` handles the pointer, and `SelectionList` rows select on
+  click and submit on double-click. Motion reports (`?1003`) are only on while
+  a hover handler exists.
 - **Hit-testing only on the alternate screen**, where the frame starts at row
   0. Inline frames don't know their screen row, so the wheel goes to the
-  scroll view around focus or the innermost one, and taps are off.
+  scroll view around focus or the innermost one, and clicks and hover are off.
 
 ## Consequences
 

@@ -8,10 +8,15 @@ extension View {
     /// click. For each count only the innermost handler runs, so a tap on a
     /// view inside a tappable row doesn't also tap the row.
     public func onTapGesture(count: Int = 1, perform action: @escaping @MainActor () -> Void) -> some View {
-        modified { node, _ in
-            // A layout gives the node a frame of its own to hit-test.
-            node.layout = PassThroughLayout()
-            if node.environment.isEnabled { node.behaviors.tapHandlers.append((max(1, count), action)) }
-        }
+        interaction { $0.tapHandlers.append((max(1, count), action)) }
+    }
+
+    /// Calls `action` with `true` when the pointer moves onto the view and
+    /// `false` when it leaves, as SwiftUI's `onHover`. Needs
+    /// ``RenderOptions/mouseReporting`` and the alternate screen. While any
+    /// view has a hover handler, the runtime asks the terminal for motion
+    /// reports (`?1003`), so the pointer is tracked without a button held.
+    public func onHover(perform action: @escaping @MainActor (Bool) -> Void) -> some View {
+        interaction { $0.hoverHandlers.append(action) }
     }
 }

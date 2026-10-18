@@ -4,7 +4,9 @@
 /// The list is focusable. While it has focus, ↑/↓ (or k/j) move the selection,
 /// Home and End jump to the ends, and Enter calls `onSubmit` with the selected
 /// element. The selected row shows a `›`. With `visibleRows` set, the list shows
-/// that many rows and scrolls to keep the selection in view.
+/// that many rows and scrolls to keep the selection in view. With
+/// ``RenderOptions/mouseReporting`` on the alternate screen, a click on a row
+/// focuses the list and selects the row, and a double-click submits it.
 ///
 /// ```swift
 /// @State private var choice: Fruit.ID?
@@ -101,9 +103,9 @@ public struct SelectionList<Data: RandomAccessCollection, ID: Hashable, Row: Vie
         return .handled
     }
 
-    @ViewBuilder
     private func rowView(_ item: Data.Element, isSelected: Bool) -> some View {
-        HStack(spacing: 1) {
+        let itemID = item[keyPath: id]
+        return HStack(spacing: 1) {
             Text(isSelected ? "›" : " ").foregroundStyle(.cyan)
             if isSelected {
                 row(item).foregroundStyle(.cyan).bold()
@@ -111,6 +113,18 @@ public struct SelectionList<Data: RandomAccessCollection, ID: Hashable, Row: Vie
                 row(item)
             }
         }
+        .onTapGesture { selectClicked(itemID) }
+        .onTapGesture(count: 2) {
+            selectClicked(itemID)
+            _ = submitSelection()
+        }
+    }
+
+    /// Selects the row with `itemID`, for a click.
+    private func selectClicked(_ itemID: ID) {
+        let items = Array(data)
+        guard let position = items.firstIndex(where: { $0[keyPath: id] == itemID }) else { return }
+        _ = select(position, in: items)
     }
 
     /// The position of the selected element, or nil when nothing is selected.

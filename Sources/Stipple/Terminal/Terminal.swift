@@ -159,6 +159,20 @@ public final class Terminal: TerminalOutput {
         switchMode(enabled ? TerminalSequence.mouseReportingOn : TerminalSequence.mouseReportingOff)
     }
 
+    /// Turns pointer motion reports (`?1003`) on or off, for hover. Use it
+    /// with ``setMouseReporting(_:)``; motion reports flood stdin while the
+    /// pointer moves, so switch them on only while something listens.
+    public func setMouseMotionReporting(_ enabled: Bool) {
+        guard modes.mouseMotion != enabled else { return }
+        modes.mouseMotion = enabled
+        if enabled {
+            switchMode(TerminalSequence.mouseMotionOn)
+        } else {
+            let buttons = modes.mouseReporting ? "\u{1B}[?1000h" : ""
+            switchMode(TerminalSequence.mouseMotionOff + buttons)
+        }
+    }
+
     /// Pushes kitty keyboard protocol flags (`CSI > flags u`). Pair it with ``popKittyKeyboard()``.
     public func pushKittyKeyboard(_ flags: KittyKeyboardFlags) {
         modes.kittyKeyboard.append(flags)

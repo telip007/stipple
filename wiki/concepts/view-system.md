@@ -126,10 +126,18 @@ modifiers are in [ScrollPosition.swift](../../Sources/Stipple/Views/ScrollPositi
   scroll view of that list that can move (so an inner view at its end lets the
   outer one scroll). Inline, the frame's screen row is unknown, so the wheel
   goes to scroll views around focus, then the innermost one in tree order.
-  Taps: a left press records the innermost node with tap handlers; the
-  release must hit the same node. Clicks on the same cell within 500 ms form
-  a series, and for each count the innermost handler on the path up from the
-  pressed node runs when the series length is a multiple of its count.
+  Clicks, taps and hover use the *pointer path*: the innermost hit node and
+  its ancestors, so transparent nodes (a `.focusable()` or `.onTapGesture`
+  modifier without a layout) are found through their hit descendants.
+  A left press first focuses the innermost enabled focusable node on the
+  path (click-to-focus), then records the innermost node with tap handlers;
+  the release must find the same node. Clicks on the same cell within
+  500 ms form a series, and for each count the innermost handler on the path
+  up from the pressed node runs when the series length is a multiple of its
+  count. Every report updates hover: nodes with `.onHover` handlers on the
+  path get `true` on entering and `false` on leaving. After each frame the
+  runtime turns motion reports (`?1003`) on while any node has a hover
+  handler and off when none has.
 
 ## Runtime
 
@@ -176,6 +184,10 @@ Ink keeps every `aria-*` prop on one element.
 - **`.id(_:)` is transparent.** It must not get a layout: a `PassThroughLayout`
   would stack a multi-view body vertically even inside an `HStack`. Its frame
   for `scrollTo(id:)` is the union of its layout children's frames.
+- **`.onTapGesture` and `.onHover` have no layout.** An earlier version gave
+  them a `PassThroughLayout` so they had a frame to hit-test, which stacks a
+  multi-view body vertically. The pointer path finds them through their hit
+  descendants instead.
 - **A ScrollView offered `.infinity` height answers `.infinity`.** That makes it
   the most flexible child of a stack, so it takes the space left after
   headers and inputs, as in SwiftUI.

@@ -148,8 +148,16 @@ struct TerminalTests {
         #expect(pty.read(until: "1000l") == "\u{1B}[?1006l\u{1B}[?1000l")
         terminal.setMouseReporting(true)
         _ = pty.read(until: "1006h")
+        terminal.setMouseMotionReporting(true)
+        terminal.setMouseMotionReporting(true)
+        #expect(pty.read(until: "1003h") == "\u{1B}[?1003h")
+        terminal.setMouseMotionReporting(false)
+        // Leaving `?1003` stops all tracking in xterm, so button reports come back on.
+        #expect(pty.read(until: "1000h") == "\u{1B}[?1003l\u{1B}[?1000h")
+        terminal.setMouseMotionReporting(true)
+        _ = pty.read(until: "1003h")
         terminal.restore()
-        #expect(pty.read(until: "1000l") == "\u{1B}[?1006l\u{1B}[?1000l")
+        #expect(pty.read(until: "1000l") == "\u{1B}[?1003l\u{1B}[?1006l\u{1B}[?1000l")
         #expect(terminal.modes.isEmpty)
     }
 }

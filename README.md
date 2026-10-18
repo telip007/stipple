@@ -128,7 +128,7 @@ from separate packages:
 | `TextField("Name", text: $name)`, `SecureField` | Single-line input with cursor, word and line editing, paste, `.onSubmit` | ink-text-input |
 | `ProgressView()`, `ProgressView("Loading")` | Spinner (`.progressViewStyle(.dots / .line / .arc)`) | ink-spinner |
 | `ProgressView(value: 0.4)` | Progress bar that fills the offered width | ink-progress-bar |
-| `SelectionList(items, selection: $selected) { … }` | Arrow-key list with scrolling and Enter to submit | ink-select-input |
+| `SelectionList(items, selection: $selected) { … }` | Arrow-key list with scrolling and Enter to submit; click selects, double-click submits | ink-select-input |
 | `ScrollView { … }` | Vertical scrolling with a scroll indicator, `.scrollPosition($position)`, `.defaultScrollAnchor(.bottom)` for chat-style pinning, Page Up/Down and the mouse wheel | |
 | `Divider()` | A line across the enclosing stack | |
 
@@ -177,7 +177,8 @@ struct Transcript: View {
 
 `position.edge == .bottom` says whether it is pinned, and
 `position.scrollTo(edge: .bottom)` jumps back. Turn on
-`RenderOptions.mouseReporting` for the mouse wheel and `.onTapGesture`.
+`RenderOptions.mouseReporting` for the mouse wheel, click-to-focus,
+`.onTapGesture` and `.onHover`.
 
 ## Coming from Ink
 
@@ -205,8 +206,10 @@ Stipple mirrors SwiftUI's names and layout model, with these differences:
   spacing are whole numbers of columns and rows.
 - **Keyboard first, mouse opt-in.** Input is the keyboard (`onKeyPress`,
   `onPaste`) and pasted text. With `RenderOptions.mouseReporting` the wheel
-  scrolls the `ScrollView` under the pointer and `.onTapGesture` sees clicks
-  (on the alternate screen); other gestures don't exist. While it is on,
+  scrolls the `ScrollView` under the pointer, and on the alternate screen a
+  click focuses the view under it, `.onTapGesture(count:)` sees clicks,
+  `.onHover` sees the pointer, and a `SelectionList` row selects on click and
+  submits on double-click. Other gestures (drag, long press) don't exist. While it is on,
   terminals need Shift (Option in some macOS terminals) held to select text.
 - **Scrolling is vertical and row-based.** `ScrollView` scrolls by rows;
   `ScrollPosition` takes `scrollTo(edge:)`, `scrollTo(y:)`, `scrollTo(id:)` and

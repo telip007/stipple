@@ -27,8 +27,10 @@ public struct RenderOptions: Sendable {
     /// plain when stdout isn't a terminal or when running in CI.
     public var interactive: Bool?
     /// Report mouse buttons and the wheel, so the wheel scrolls the
-    /// ``ScrollView`` under the pointer and ``View/onTapGesture(count:perform:)``
-    /// sees clicks. Off by default: while it is on, terminals pass mouse
+    /// ``ScrollView`` under the pointer, a click focuses the focusable view
+    /// under it, ``View/onTapGesture(count:perform:)`` sees clicks and
+    /// ``View/onHover(perform:)`` sees the pointer (clicks and hover need
+    /// the alternate screen). Off by default: while it is on, terminals pass mouse
     /// drags to the app, so selecting text needs Shift (Option in some macOS
     /// terminals) held while dragging.
     public var mouseReporting = false

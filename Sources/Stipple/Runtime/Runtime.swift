@@ -185,6 +185,7 @@ final class Runtime {
         let frame = produceFrame()
         writer.setCursorPosition(frame.cursor)
         writer.write(frame: frame.text, height: frame.height, staticOutput: frame.staticOutput)
+        if isInteractive { syncMouseMotion() }
     }
 
     // MARK: Exit

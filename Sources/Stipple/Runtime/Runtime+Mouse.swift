@@ -14,11 +14,20 @@ struct ClickTracker {
 
     weak var pressed: ViewNode?
     var last: Click?
+    /// The nodes with hover handlers that the pointer is over.
+    var hovered: [Weak] = []
+
+    /// A weak reference, so hover state doesn't keep unmounted nodes alive.
+    struct Weak {
+        weak var node: ViewNode?
+    }
 }
 
 extension Runtime {
-    /// Routes one mouse report: the wheel scrolls, left clicks tap.
+    /// Routes one mouse report: the wheel scrolls, a left press focuses and
+    /// starts a tap, the release finishes it, and every report updates hover.
     func handleMouse(_ event: MouseEvent) {
+        updateHover(at: event.location)
         switch event.kind {
         case .scroll(let direction):
             switch direction {
@@ -27,6 +36,7 @@ extension Runtime {
             case .left, .right: break
             }
         case .press(.left):
+            focusClicked(at: event.location)
             clicks.pressed = tapTarget(at: event.location)
         case .release(.left), .release(nil):
             finishClick(at: event.location)
@@ -55,10 +65,52 @@ extension Runtime {
         }
     }
 
-    /// The innermost view under the pointer that handles taps; only on the alternate screen.
+    /// The innermost node under the pointer, and the nodes around it, innermost
+    /// first; empty off the alternate screen, where the frame's screen row is unknown.
+    private func pathUnderPointer(at location: Point) -> [ViewNode] {
+        guard writer.alternateScreen, let root = graph.root,
+            let innermost = ViewGraph.nodes(at: location, in: root).first
+        else { return [] }
+        var path: [ViewNode] = []
+        var current: ViewNode? = innermost
+        while let node = current {
+            path.append(node)
+            current = node.parent
+        }
+        return path
+    }
+
+    /// The innermost view under the pointer that handles taps.
     private func tapTarget(at location: Point) -> ViewNode? {
-        guard writer.alternateScreen, let root = graph.root else { return nil }
-        return ViewGraph.nodes(at: location, in: root).first { !$0.behaviors.tapHandlers.isEmpty }
+        pathUnderPointer(at: location).first { !$0.behaviors.tapHandlers.isEmpty }
+    }
+
+    /// Focuses the innermost focusable view under the pointer, as a click in a GUI does.
+    private func focusClicked(at location: Point) {
+        guard let node = pathUnderPointer(at: location).first(where: { $0.behaviors.focus != nil }),
+            node.behaviors.focus?.isEnabled == true, node !== graph.focus.focusedNode
+        else { return }
+        graph.focus.focus(node)
+        scheduleRender()
+    }
+
+    /// Calls `onHover` handlers whose view the pointer entered (`true`) or left (`false`).
+    private func updateHover(at location: Point) {
+        let now = pathUnderPointer(at: location).filter { !$0.behaviors.hoverHandlers.isEmpty }
+        let before = clicks.hovered.compactMap(\.node)
+        clicks.hovered = now.map(ClickTracker.Weak.init)
+        for node in before where node.isMounted && !now.contains(where: { $0 === node }) {
+            for handler in node.behaviors.hoverHandlers { handler(false) }
+        }
+        for node in now.reversed() where !before.contains(where: { $0 === node }) {
+            for handler in node.behaviors.hoverHandlers { handler(true) }
+        }
+    }
+
+    /// Turns motion reporting on while some view has an `onHover` handler.
+    func syncMouseMotion() {
+        guard options.mouseReporting, let root = graph.root else { return }
+        terminal.setMouseMotionReporting(ViewGraph.allNodes(in: root).contains { !$0.behaviors.hoverHandlers.isEmpty })
     }
 
     private func finishClick(at location: Point) {

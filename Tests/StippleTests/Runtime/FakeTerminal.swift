@@ -13,6 +13,7 @@ final class FakeTerminal: TerminalHost {
     private(set) var rawMode = false
     private(set) var bracketedPaste = false
     private(set) var mouseReporting = false
+    private(set) var mouseMotion = false
     private(set) var kittyFlags: [KittyKeyboardFlags] = []
     private(set) var kittyQueried = false
     private(set) var restored = false
@@ -40,6 +41,7 @@ final class FakeTerminal: TerminalHost {
 
     func setBracketedPaste(_ enabled: Bool) { bracketedPaste = enabled }
     func setMouseReporting(_ enabled: Bool) { mouseReporting = enabled }
+    func setMouseMotionReporting(_ enabled: Bool) { mouseMotion = enabled }
     func pushKittyKeyboard(_ flags: KittyKeyboardFlags) { kittyFlags.append(flags) }
     func queryKittyKeyboard() { kittyQueried = true }
     func noteModes(alternateScreen: Bool, cursorHidden: Bool) { notedModes = (alternateScreen, cursorHidden) }

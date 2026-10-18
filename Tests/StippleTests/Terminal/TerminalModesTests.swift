@@ -39,6 +39,9 @@ struct TerminalModesTests {
         let modes = TerminalModes(alternateScreen: true, mouseReporting: true)
         #expect(modes.enterSequence == "\u{1B}[?1049h\u{1B}[?1000h\u{1B}[?1006h")
         #expect(modes.restoreSequence == "\u{1B}[?1006l\u{1B}[?1000l\u{1B}[?1049l")
+        let motion = TerminalModes(mouseReporting: true, mouseMotion: true)
+        #expect(motion.enterSequence == "\u{1B}[?1000h\u{1B}[?1006h\u{1B}[?1003h")
+        #expect(motion.restoreSequence == "\u{1B}[?1003l\u{1B}[?1006l\u{1B}[?1000l")
     }
 
     @Test func dimensionParsing() {

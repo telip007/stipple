@@ -97,3 +97,6 @@ input routing, so it is a primitive in `Views/`. See
   the element, or the environment's `.onSubmit` when no closure is given. Key
   handlers read the selection when the key arrives, so keys typed before a
   redraw aren't lost. `visibleRows` scrolls the window to keep the selection visible.
+  With mouse reporting on the alternate screen, a click on a row focuses the
+  list (click-to-focus) and selects the row, and a double-click submits it.
+  Only the row's own cells are clickable, not the empty space to its right.

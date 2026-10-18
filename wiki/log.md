@@ -73,3 +73,6 @@ Clearing a field's text from outside (e.g. in `onSubmit`) left the stale inserti
 
 ## [2026-10-18] update | ScrollView and mouse wheel
 Added `ScrollView`, `ScrollPosition`, `.scrollPosition`, `.defaultScrollAnchor(_:for:)`, `.scrollIndicators`, `.scrollOnPageKeys`, `.id`, `UnitPoint` and `Axis.Set` ([decision 0008](decisions/0008-scrolling-and-mouse.md)). Scroll views take keys near focus as a separate dispatch stage. `RenderOptions.mouseReporting` turns on `?1000`/`?1006`; the parser decodes SGR and X10 reports, the wheel scrolls the scroll view under the pointer, and `.onTapGesture` handles clicks on the alternate screen.
+
+## [2026-10-18] update | Clicks, focus on click and hover
+Under `RenderOptions.mouseReporting` on the alternate screen: a left press focuses the focusable view under the pointer, `SelectionList` rows select on click and submit on double-click, and `.onHover` reports the pointer through motion reports (`?1003`), which are on only while a hover handler exists. Tap and hover handlers no longer add a layout; hit-testing walks up from the innermost node.
