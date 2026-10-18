@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/telip007/stipple/compare/0.3.1...0.3.2) (2026-10-18)
+
+
+### Performance
+
+* **layout:** keep layout work across frames ([c077edb](https://github.com/telip007/stipple/commit/c077edb40d8a549668c4d3582e8c4e2dfec147ff))
+
 ## [0.3.1](https://github.com/telip007/stipple/compare/0.3.0...0.3.1) (2026-10-18)
 
 
