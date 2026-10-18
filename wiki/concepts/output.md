@@ -25,7 +25,6 @@ here: the runtime decides how often to call the writer.
 | `LineUpdate.swift` | `line-update.ts` | Repaint one changed line from its first differing column |
 | `CursorHelpers.swift` | `cursor-helpers.ts` | Cursor suffix, return-to-bottom, cursor-only and erase sequences |
 | `Escape.swift` | `ansi-escapes` | Byte-identical sequence builders |
-| `DisplayWidth.swift` | `string-width` | Column width for the line diff (see Gotchas) |
 
 ## How a frame is written
 
@@ -117,10 +116,10 @@ Every sequence the module writes, with the `ansi-escapes` name and the
   writer produces. They can differ for `\r\n`, which Swift counts as one
   `Character`. `splitLines` splits on the `\n` scalar only, so `\r\n` still
   splits as Ink does.
-- **`DisplayWidth` is a stand-in.** It is an approximation of `string-width`
-  (East Asian wide, emoji presentation, combining marks). It exists so the
-  Output module stays self-contained. It should be replaced by
-  `TextMetrics.width(of:)` from `Render/` once that is the shared measure.
+- **Column widths come from `TextMetrics`.** The line diff measures the
+  unchanged prefix with `TextMetrics.width(of:)` (`Render/TextMetrics.swift`),
+  the same measure the canvas uses. A second width function would let the diff
+  and the canvas disagree about where the cursor is, so do not add one.
 - **Windows console behaviour is not ported.** Ink clears every fullscreen frame
   on Windows (`isWindowsConsole`) because the console scrolls on the bottom-right
   write. Stipple targets macOS and Linux only, so that branch is absent.

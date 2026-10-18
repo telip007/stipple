@@ -40,20 +40,20 @@ import Testing
     }
 }
 
-@Suite struct DisplayWidthTests {
+@Suite struct TextMetricsWidthTests {
     @Test func asciiIsOneColumnPerCharacter() {
-        #expect(DisplayWidth.of("abc") == 3)
-        #expect(DisplayWidth.of("") == 0)
+        #expect(TextMetrics.width(of: "abc") == 3)
+        #expect(TextMetrics.width(of: "") == 0)
     }
 
     @Test func wideCharactersTakeTwoColumns() {
-        #expect(DisplayWidth.of("日本") == 4)
-        #expect(DisplayWidth.of("👍") == 2)
-        #expect(DisplayWidth.of("ｱ") == 1)
+        #expect(TextMetrics.width(of: "日本") == 4)
+        #expect(TextMetrics.width(of: "👍") == 2)
+        #expect(TextMetrics.width(of: "ｱ") == 1)
     }
 
     @Test func combiningMarksTakeNoColumns() {
-        #expect(DisplayWidth.of("e\u{301}") == 1)
+        #expect(TextMetrics.width(of: "e\u{301}") == 1)
     }
 }
 

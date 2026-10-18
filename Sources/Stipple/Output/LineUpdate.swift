@@ -26,13 +26,13 @@ func lineUpdate(previous: String, next: String, columns: Int) -> String {
     }
 
     let textLength = matchingTextLength(previousText, nextText, limit: textLimit)
-    let column = DisplayWidth.of(String(nextText.prefix(textLength)))
+    let column = TextMetrics.width(of: String(nextText.prefix(textLength)))
 
     // CHA clamps at the last cell. It cannot reproduce a wrap-pending cursor after
     // a full-width prefix, so such lines are repainted whole.
     let tailWidths = (
-        previous: DisplayWidth.of(String(previousText.dropFirst(textLength))),
-        next: DisplayWidth.of(String(nextText.dropFirst(textLength)))
+        previous: TextMetrics.width(of: String(previousText.dropFirst(textLength))),
+        next: TextMetrics.width(of: String(nextText.dropFirst(textLength)))
     )
     if column == 0 || column >= columns || column + tailWidths.previous > columns || column + tailWidths.next > columns
     {
