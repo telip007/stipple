@@ -115,3 +115,25 @@ import Testing
         #expect(TextLayout.truncate([], width: 1, mode: .tail).isEmpty)
     }
 }
+
+@Suite struct TabExpansionTests {
+    @Test func tabsReachTheNextStop() {
+        #expect(texts(TextLayout.lines([run("A\tB")])) == ["A       B"])
+        #expect(texts(TextLayout.lines([run("\tx")])) == ["        x"])
+        #expect(texts(TextLayout.lines([run("12345678\tx")])) == ["12345678        x"])
+    }
+
+    @Test func columnsCountWideCharactersAcrossRuns() {
+        let lines = TextLayout.lines([run("界", .red), run("\tB")])
+        #expect(texts(lines) == ["界      B"])
+    }
+
+    @Test func eachLineStartsAtColumnZero() {
+        #expect(texts(TextLayout.lines([run("ab\n\tc")])) == ["ab", "        c"])
+    }
+
+    @Test func tabsKeepTheirStyle() {
+        let lines = TextLayout.lines([run("a"), run("\t", .onBlue)])
+        #expect(lines == [[run("a"), run(String(repeating: " ", count: 7), .onBlue)]])
+    }
+}
