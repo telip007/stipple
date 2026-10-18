@@ -6,9 +6,11 @@ Please report vulnerabilities privately via
 [GitHub Security Advisories](https://github.com/telip007/stipple/security/advisories/new)
 rather than public issues. We aim to respond within a week.
 
-## API keys
+## Scope
 
-- Never include API keys in issues, PRs, logs or test fixtures. If you
-  accidentally publish one, revoke it immediately at https://openrouter.ai/keys.
-- Don't embed API keys in distributed apps. Use per-user keys via OAuth PKCE
-  or proxy requests through your own backend.
+Stipple reads from and writes to a terminal, so the relevant issues include
+escape-sequence injection (untrusted text that can move the cursor, change the
+title or otherwise escape its cell), crashes on malformed input bytes, and
+paths that leave the terminal in raw mode or on the alternate screen.
+
+Please include a minimal reproduction and the terminal emulator you used.

@@ -1,0 +1,60 @@
+---
+title: Releasing
+summary: Conventional Commits, release-please release PRs, SemVer bumps and Dependabot updates.
+updated: 2026-10-18
+---
+
+# Releasing
+
+Policy: [0007 Conventional Commits and release-please](../decisions/0007-conventional-commits-and-release-please.md).
+
+## How a change becomes a release
+
+1. Every commit header follows Conventional Commits. Locally the
+   [commit-msg hook](../../.githooks/commit-msg) checks it with
+   [check-commit-message.py](../../Scripts/check-commit-message.py), and CI's
+   `pr-title` job checks PR titles.
+2. PRs are **squash-merged with the PR title as the commit message**
+   (repository setting). One PR is one conventional commit on `main`.
+3. On every push to `main`,
+   [release-please](../../.github/workflows/release-please.yml) updates an
+   open `chore: release x.y.z` PR. It computes the next version from the
+   commits since the last tag, writes the [CHANGELOG](../../CHANGELOG.md)
+   section, and bumps the annotated version string in the README install
+   snippet (`x-release-please-version`), plus `version.txt` and
+   `.release-please-manifest.json`.
+4. A maintainer merges the release PR. release-please then tags `x.y.z`
+   (no `v`) and publishes the GitHub release with the changelog section.
+
+| Commit | Bump on 0.x | Bump from 1.0 |
+| --- | --- | --- |
+| `fix`, `perf`, `deps` | patch | patch |
+| `feat` | minor | minor |
+| `!` / `BREAKING CHANGE:` | minor (`bump-minor-pre-major`) | major |
+| `docs`, `refactor`, `test`, `build`, `ci`, `chore`, `style` | none | none |
+
+Config: [release-please-config.json](../../release-please-config.json).
+Changelog sections shown: Features, Bug Fixes, Performance, Reverts,
+Documentation, Dependencies.
+
+## Automated PRs
+
+[Dependabot](../../.github/dependabot.yml), monthly: `ci: bump …` for
+actions (no release), `deps: bump …` for Swift dependencies (patch release).
+
+## Gotchas
+
+- PRs opened with `GITHUB_TOKEN` (release-please) don't trigger other
+  workflows, so CI doesn't run on them automatically. Close and reopen, or
+  push a commit, before merging. A fine-grained PAT as the release-please
+  token would fix this, at the cost of a secret to manage.
+- The type is about the effect on **users of the package**: a CI-only change
+  is `ci:`, not `fix:`, even if it fixes CI.
+- Commits made before the first release don't need to follow the convention
+  retroactively. release-please only reads commits after the last release tag.
+- The manifest starts at `0.0.0`, so the first release PR proposes `0.1.0`
+  once a `feat` commit exists.
+- The "Allow GitHub Actions to create and approve pull requests" repository
+  setting must stay enabled.
+- After a tag, the Swift Package Index (if submitted) picks up the version
+  and builds the DocC docs ([.spi.yml](../../.spi.yml)).

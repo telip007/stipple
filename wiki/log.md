@@ -7,3 +7,6 @@ Recorded decisions 0001–0003: SwiftUI-shaped API over Ink's runtime, two-pass 
 
 ## [2026-10-18] update | Scaffold and module contracts
 Package, tooling copied from the backpressure setup, shared Core types, and the architecture page with one contract per module.
+
+## [2026-10-18] update | Open-source and agent setup
+README, NOTICE, CONTRIBUTING, SECURITY, CHANGELOG stub, CI and issue templates adapted for a terminal library; wiki pages for backpressure, agent workflow, testing and releasing; decisions 0004–0007 (backpressure, LLM wiki, Apache 2.0 with Ink attribution, Conventional Commits).

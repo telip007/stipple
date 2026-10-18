@@ -5,7 +5,7 @@ set -uo pipefail
 cd "${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"
 
 file="$(python3 -I -c 'import json,sys; print(json.load(sys.stdin).get("tool_input", {}).get("file_path", ""))')"
-[[ "$file" == *.swift && -f "$file" && "$file" != */Generated/* && "$file" != */.build/* ]] || exit 0
+[[ "$file" == *.swift && -f "$file" && "$file" != */.build/* ]] || exit 0
 
 output="$(swift format lint --strict "$file" 2>&1)"
 if command -v swiftlint >/dev/null; then
