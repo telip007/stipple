@@ -69,3 +69,9 @@ import Testing
     #expect(FieldLine(text: "ab", placeholder: "", isSecure: false, cursor: 9).cursor == 2)
     #expect(FieldLine(text: "ab", placeholder: "", isSecure: false, cursor: -1).cursor == 0)
 }
+
+@Test func placeholderCaretIsOnItsFirstCharacterWhateverTheOffset() {
+    let line = FieldLine(text: "", placeholder: "Message", isSecure: false, cursor: 3)
+    #expect(line.cursor == 0)
+    #expect(line.window(width: 20).caretColumn == 0)
+}

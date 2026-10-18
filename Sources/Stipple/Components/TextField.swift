@@ -9,6 +9,10 @@
 /// insertion point, except when the text is empty: then the field leaves it
 /// unhandled, so an ancestor's `.onKeyPress` can treat it as end-of-file.
 ///
+/// When the bound text is changed from outside, for example cleared in
+/// `onSubmit` or replaced with a history entry, the insertion point moves to
+/// the end of the new text.
+///
 /// ```swift
 /// @State private var name = ""
 /// TextField("Name", text: $name)

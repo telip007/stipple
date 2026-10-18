@@ -30,8 +30,13 @@ hooks, so they show what an app can build. They live in
   Command-Left and Command-Right by line. A paste inserts the whole text at once.
   The mapping lives in [TextFieldKeys.swift](../../Sources/Stipple/Components/TextFieldKeys.swift),
   and the edits in [TextEditing.swift](../../Sources/Stipple/Components/TextEditing.swift).
-- **Cursor.** The insertion point is a grapheme index in the field's own `@State`. It is
-  clamped into the text whenever the binding changes from outside. While focused, the
+- **Cursor.** The insertion point is a grapheme index in the field's own `@State`. The
+  field also remembers the text its last own edit produced (seeded with the initial
+  value); when the binding holds anything else, the text was changed from outside (a
+  cleared input, a recalled history entry) and the insertion point is the end of the
+  new text, as in SwiftUI and shells. It is read live from the bindings, so several keys
+  handled before the next redraw see each other's edits. On the placeholder the caret
+  is always on its first character. While focused, the
   character under the caret is drawn inverse, and `.cursorPosition` puts the terminal
   cursor there so input methods work. A field wider than its proposal scrolls to keep
   the caret visible. Wide characters count two columns.

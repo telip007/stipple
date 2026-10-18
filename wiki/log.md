@@ -67,3 +67,6 @@ Pushed to github.com/telip007/stipple, and CI passes on macOS, Linux and lint. A
 
 ## [2026-10-18] update | Ctrl-D on an empty TextField
 Ctrl-D still deletes forward, but on an empty field it is `.ignored`, so ancestor `.onKeyPress` handlers see it and apps can treat it as end-of-file, as readline does. Documented on the Components page and in the `TextField` doc comment.
+
+## [2026-10-18] update | TextField caret after outside changes
+Clearing a field's text from outside (e.g. in `onSubmit`) left the stale insertion point, so the caret showed on the placeholder's 4th character. The field now tracks the text of its own last edit and moves the insertion point to the end after any outside change; the placeholder caret is always on its first character.

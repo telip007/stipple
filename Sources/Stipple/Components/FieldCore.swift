@@ -19,7 +19,8 @@ struct FieldLine: Equatable {
             shown = text
         }
         cells = FieldCell.cells(of: shown)
-        self.cursor = min(max(cursor, 0), cells.count)
+        // The caret sits on the placeholder's first character, whatever the offset.
+        self.cursor = isPlaceholder ? 0 : min(max(cursor, 0), cells.count)
     }
 
     /// The part of the line that fits in `width` columns, scrolled so the caret stays visible.
