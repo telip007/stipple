@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.1](https://github.com/telip007/stipple/compare/0.1.0...0.1.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* **components:** move the TextField caret to the end after outside changes ([4f44fb3](https://github.com/telip007/stipple/commit/4f44fb3325e12f5784e5683777d592ace34dbb81))
+* **components:** pass Ctrl-D on an empty TextField to ancestors ([b4c58f4](https://github.com/telip007/stipple/commit/b4c58f4e1c4687658a6f092f873ec41f2f99959d))
+* downsample colors to the terminal's color depth ([7f6f0b0](https://github.com/telip007/stipple/commit/7f6f0b0cfa563ad5e219605d0e6602347084769b))
+
 ## 0.1.0 (2026-10-18)
 
 
