@@ -58,3 +58,6 @@ Merged TextField/SecureField, ProgressView and SelectionList. Setting `@FocusSta
 
 ## [2026-10-18] update | Poll instead of sleeping in timing tests
 The first push was blocked by a flaky Linux test under load. Timer-based tests now poll with `Runtime.waitUntil`.
+
+## [2026-10-18] update | Published on GitHub
+Pushed to github.com/telip007/stipple, and CI passes on macOS, Linux and lint. Allowed Actions to open PRs for release-please, and pinned the first release to 0.1.0.

@@ -60,3 +60,13 @@ actions (no release), `deps: bump …` for Swift dependencies (patch release).
   setting must stay enabled.
 - After a tag, the Swift Package Index (if submitted) picks up the version
   and builds the DocC docs ([.spi.yml](../../.spi.yml)).
+
+## Gotchas
+
+- **The first release defaults to 1.0.0.** Without a previous release,
+  release-please ignores the `0.0.0` manifest and proposes 1.0.0.
+  `initial-version: 0.1.0` in `release-please-config.json` keeps the first release on 0.x.
+- **New repositories don't let Actions open PRs.** release-please fails with
+  "GitHub Actions is not permitted to create or approve pull requests" until
+  *Settings → Actions → Allow GitHub Actions to create and approve pull requests*
+  is on (`can_approve_pull_request_reviews` in the workflow permissions API).
