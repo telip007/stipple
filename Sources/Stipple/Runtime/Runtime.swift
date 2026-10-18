@@ -34,6 +34,7 @@ final class Runtime {
                 incremental: options.incrementalRendering,
                 debug: options.debug,
                 interactive: interactive,
+                screenReader: isScreenReaderEnabled,
             ),
         )
         graph.onNeedsRender = { [weak self] in self?.scheduleRender() }
