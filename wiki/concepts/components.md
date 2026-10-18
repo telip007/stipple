@@ -69,3 +69,20 @@ therefore needs no rebuild.
 editing model, the key mapping, the window and scroll rules, and the runtime
 behaviour: typing, submit, paste, focus through `.focusable` and `@FocusState`, the
 cursor position, and external changes to the bound text.
+
+## ProgressView and SelectionList
+
+[ProgressView.swift](../../Sources/Stipple/Components/ProgressView.swift) and
+[SelectionList.swift](../../Sources/Stipple/Components/SelectionList.swift).
+
+- `ProgressView()` / `ProgressView("Loading")` is a `TimelineView` spinner.
+  `ProgressViewStyle` is a value (frames and interval) with `.dots`, `.line` and
+  `.arc` presets, not SwiftUI's protocol, because a terminal spinner is only frames.
+- `ProgressView(value:total:)` is a bar that fills the offered width through a
+  `GeometryReader`, so it needs the runtime's (or `renderToString`'s) repeated
+  layout pass.
+- `SelectionList(data, selection:, visibleRows:, autoFocus:, onSubmit:)` is
+  focusable. ↑/↓ and k/j move, Home and End jump, and Enter calls `onSubmit` with
+  the element, or the environment's `.onSubmit` when no closure is given. Key
+  handlers read the selection when the key arrives, so keys typed before a
+  redraw aren't lost. `visibleRows` scrolls the window to keep the selection visible.

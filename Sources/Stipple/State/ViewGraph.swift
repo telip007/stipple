@@ -7,6 +7,7 @@ final class ViewGraph {
     private var mountedNodes: [ViewNode] = []
     private var touchedNodes: [ViewNode] = []
     private var afterFlush: [@MainActor () -> Void] = []
+    private var focusNeedsUpdate = false
     private var runningTasks: [ObjectIdentifier: [(id: AnyHashable?, task: Task<Void, Never>)]] = [:]
     let focus = FocusController()
     /// Nodes whose observed values changed, possibly reported off the main actor.
@@ -60,7 +61,12 @@ final class ViewGraph {
     @discardableResult
     func flush() -> Bool {
         drainInvalidations()
-        guard !pendingRebuilds.isEmpty else { return false }
+        guard !pendingRebuilds.isEmpty else {
+            guard focusNeedsUpdate else { return false }
+            focusNeedsUpdate = false
+            focus.update(root: root)
+            return true
+        }
         let pending = pendingRebuilds.sorted { $0.depth < $1.depth }
         pendingRebuilds.removeAll()
         for node in pending where node.isDirty && node.isMounted {
@@ -78,6 +84,12 @@ final class ViewGraph {
     }
 
     // MARK: Node notifications
+
+    /// A `@FocusState` changed: re-apply focus on the next frame.
+    func requestFocusUpdate() {
+        focusNeedsUpdate = true
+        onNeedsRender()
+    }
 
     func scheduleRebuild(_ node: ViewNode) {
         pendingRebuilds.append(node)
@@ -117,6 +129,7 @@ final class ViewGraph {
         for node in touched where node.isMounted {
             syncTasks(of: node)
         }
+        focusNeedsUpdate = false
         focus.update(root: root)
         let actions = afterFlush
         afterFlush.removeAll()

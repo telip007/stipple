@@ -1,5 +1,5 @@
-// A REPL-style chat: history in scrollback, a live input line with a
-// cursor, Enter to send, Ctrl-C to quit. Run with `swift run chat`.
+// A REPL-style chat: history in scrollback with `Static`, a live input line
+// with `TextField`, Enter to send, Ctrl-C to quit. Run with `swift run chat`.
 import Stipple
 
 struct Message: Identifiable {
@@ -10,6 +10,7 @@ struct Message: Identifiable {
 struct Chat: View {
     @State private var messages: [Message] = []
     @State private var input = ""
+    @FocusState private var isInputFocused = true
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -19,30 +20,18 @@ struct Chat: View {
             }
             HStack {
                 Text("› ").foregroundStyle(.magenta)
-                Text(input)
-                    .cursorPosition(Point(x: TextMetrics.width(of: input), y: 0))
+                TextField("Send a message", text: $input).focused($isInputFocused)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 1)
             .border(.rounded, color: .gray)
             Text("Enter to send · Ctrl-C to quit").dim()
         }
-        .onKeyPress { press in
-            switch press.key {
-            case .return:
-                guard !input.isEmpty else { return .handled }
-                messages.append(Message(id: messages.count, text: input))
-                input = ""
-            case .backspace:
-                if !input.isEmpty { input.removeLast() }
-            case .character where !press.modifiers.contains(.control):
-                input += press.characters
-            default:
-                return .ignored
-            }
-            return .handled
+        .onSubmit {
+            guard !input.isEmpty else { return }
+            messages.append(Message(id: messages.count, text: input))
+            input = ""
         }
-        .onPaste { input += $0 }
     }
 }
 

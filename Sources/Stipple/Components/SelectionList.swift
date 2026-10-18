@@ -23,6 +23,7 @@ public struct SelectionList<Data: RandomAccessCollection, ID: Hashable, Row: Vie
     private let visibleRows: Int?
     private let autoFocus: Bool
     private let onSubmit: (@MainActor (Data.Element) -> Void)?
+    @Environment(\.submitAction) private var submitAction
     private let row: @MainActor (Data.Element) -> Row
     @State private var scrollOffset = 0
 
@@ -92,7 +93,11 @@ public struct SelectionList<Data: RandomAccessCollection, ID: Hashable, Row: Vie
     private func submitSelection() -> KeyPress.Result {
         let items = Array(data)
         guard let position = selectedPosition(in: items) else { return .ignored }
-        onSubmit?(items[position])
+        if let onSubmit {
+            onSubmit(items[position])
+        } else {
+            submitAction?()
+        }
         return .handled
     }
 

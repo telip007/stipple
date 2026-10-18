@@ -1,5 +1,5 @@
 // Finished tasks scroll into the terminal's history with `Static` while a
-// spinner shows the running one. Run with `swift run tasks`.
+// spinner and a progress bar show the running one. Run with `swift run tasks`.
 import Stipple
 
 struct Tasks: View {
@@ -7,7 +7,6 @@ struct Tasks: View {
     @State private var current = 1
     @Environment(\.exit) private var exit
     private let total = 8
-    private let spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -15,10 +14,10 @@ struct Tasks: View {
                 Text("✔ ").foregroundStyle(.green) + Text(name)
             }
             if current <= total {
-                TimelineView(.periodic(every: .milliseconds(80))) { context in
-                    Text(spinner[context.frame % spinner.count]).foregroundStyle(.yellow)
-                        + Text(" Task \(current) of \(total)")
-                }
+                ProgressView("Task \(current) of \(total)").foregroundStyle(.yellow)
+                ProgressView(value: Double(current - 1), total: Double(total))
+                    .frame(maxWidth: 40)
+                    .foregroundStyle(.green)
             }
         }
         .task {

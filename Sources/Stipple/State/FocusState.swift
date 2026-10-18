@@ -13,6 +13,7 @@
 public struct FocusState<Value: Hashable>: DynamicPropertyLink {
     private let startValue: Value
     private let link = StateLink<Value>()
+    private let graphLink = GraphLink()
 
     /// A binding to a focus state, passed to `.focused(_:equals:)`.
     @MainActor
@@ -36,20 +37,38 @@ public struct FocusState<Value: Hashable>: DynamicPropertyLink {
     /// The current value. Setting it moves focus.
     public var wrappedValue: Value {
         get { link.box?.value ?? startValue }
-        nonmutating set { link.box?.value = newValue }
+        nonmutating set {
+            link.box?.value = newValue
+            graphLink.graph?.requestFocusUpdate()
+        }
     }
 
     /// A binding for `.focused(_:equals:)`.
     public var projectedValue: Binding {
         let link = link
+        let graphLink = graphLink
         let startValue = startValue
-        return Binding(get: { link.box?.value ?? startValue }, set: { link.box?.value = $0 })
+        return Binding(
+            get: { link.box?.value ?? startValue },
+            set: {
+                link.box?.value = $0
+                graphLink.graph?.requestFocusUpdate()
+            },
+        )
     }
 
     func install(in node: ViewNode, index: Int) {
         let startValue = startValue
         link.box = node.storage(at: index) { StateBox(startValue) }
+        graphLink.graph = node.graph
     }
+}
+
+/// Lets `@FocusState` ask the graph to re-apply focus when it is set, even
+/// when no body reads it.
+@MainActor
+final class GraphLink {
+    weak var graph: ViewGraph?
 }
 
 extension FocusState where Value == Bool {

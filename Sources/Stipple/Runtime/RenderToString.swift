@@ -7,8 +7,18 @@ extension Stipple {
         let graph = ViewGraph()
         graph.mount(view, environment: EnvironmentValues())
         defer { graph.unmountAll() }
-        let staticOutput = graph.takeStaticOutput(width: width)
-        return staticOutput + FrameRenderer(graph: graph).render(width: width, height: nil).frame
+        var staticOutput = ""
+        var frame = ""
+        // Geometry readers see their size from the previous pass; repeat
+        // until the graph settles, as the runtime does.
+        for _ in 0..<4 {
+            graph.flush()
+            staticOutput += graph.takeStaticOutput(width: width)
+            frame = FrameRenderer(graph: graph).render(width: width, height: nil).frame
+            graph.runGeometryCallbacks()
+            if !graph.hasPendingWork { break }
+        }
+        return staticOutput + frame
     }
 }
 

@@ -105,6 +105,13 @@ Ink keeps every `aria-*` prop on one element.
 
 ## Gotchas
 
+- **`@FocusState var x: Bool` needs `= false`.** Swift only default-initializes a
+  property wrapper through `init(wrappedValue:)` (for optionals, with `nil`) or an
+  unconstrained `init()`. `FocusState`'s Bool `init()` is constrained, so write
+  `@FocusState private var focused = false`. Optional focus state such as `Field?` works as in SwiftUI.
+- **Setting `@FocusState` moves focus even if no body reads it.** The wrapper keeps a
+  weak link to the graph and calls `requestFocusUpdate()`, which re-applies focus on the next flush.
+
 - **Swift 6.2 resolves shadowed names differently from 6.4.** `let cross =
   sizes.map { $0.dimension(cross) }` compiled on 6.4 (where `cross` was the
   property) but failed on Linux with 6.2, which resolves it to the local

@@ -101,7 +101,7 @@ run them with `swift run <name>`. The recordings are scripted with
 `swift run tasks`
 
 Finished tasks scroll into the terminal's history with `Static` while a
-`TimelineView` spinner shows the running one.
+`ProgressView` spinner and progress bar show the running one.
 
 <img src=".github/assets/demos/tasks.gif" alt="Eight tasks complete one after another, each leaving a check mark in the scrollback" width="380">
 
@@ -111,12 +111,49 @@ Finished tasks scroll into the terminal's history with `Static` while a
 
 `swift run chat`
 
-Typed text, Enter to send, bracketed paste, and a cursor in the input box. Sent
-messages move into scrollback.
+A `TextField` with `.onSubmit`, bracketed paste and a real terminal cursor
+(so input methods work). Sent messages move into scrollback.
 
 <img src=".github/assets/demos/chat.gif" alt="Typing and pasting messages into the chat example" width="560">
 
 [Watch in higher quality](.github/assets/demos/chat.mp4) · [Still](.github/assets/demos/chat.png)
+
+## Components
+
+Beyond the layout primitives, Stipple ships the pieces Ink apps usually pull
+from separate packages:
+
+| View | What | Ink ecosystem |
+| --- | --- | --- |
+| `TextField("Name", text: $name)`, `SecureField` | Single-line input with cursor, word and line editing, paste, `.onSubmit` | ink-text-input |
+| `ProgressView()`, `ProgressView("Loading")` | Spinner (`.progressViewStyle(.dots / .line / .arc)`) | ink-spinner |
+| `ProgressView(value: 0.4)` | Progress bar that fills the offered width | ink-progress-bar |
+| `SelectionList(items, selection: $selected) { … }` | Arrow-key list with scrolling and Enter to submit | ink-select-input |
+| `Divider()` | A line across the enclosing stack | |
+
+```swift
+struct Login: View {
+    @State private var user = ""
+    @State private var password = ""
+    @FocusState private var field: Field?
+    enum Field { case user, password }
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                Text("User:     ")
+                TextField("name", text: $user).focused($field, equals: .user)
+            }
+            HStack {
+                Text("Password: ")
+                SecureField("secret", text: $password).focused($field, equals: .password)
+            }
+        }
+        .onSubmit { field = field == .user ? .password : nil }
+        .onAppear { field = .user }
+    }
+}
+```
 
 ## Coming from Ink
 

@@ -63,3 +63,32 @@ struct ReadmeExampleTests {
         _ = entryPoint
     }
 }
+
+private struct Login: View {
+    @State private var user = ""
+    @State private var password = ""
+    @FocusState private var field: Field?
+    enum Field { case user, password }
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                Text("User:     ")
+                TextField("name", text: $user).focused($field, equals: .user)
+            }
+            HStack {
+                Text("Password: ")
+                SecureField("secret", text: $password).focused($field, equals: .password)
+            }
+        }
+        .onSubmit { field = field == .user ? .password : nil }
+        .onAppear { field = .user }
+    }
+}
+
+@MainActor
+@Test func readmeLoginRenders() {
+    let output = Stipple.renderToString(Login(), width: 40)
+    #expect(output.contains("User:"))
+    #expect(output.contains("Password:"))
+}
