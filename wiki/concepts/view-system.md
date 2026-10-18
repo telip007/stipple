@@ -55,7 +55,19 @@ SwiftUI's two-pass model ([decision 0002](../decisions/0002-two-pass-layout.md))
   (`layoutChildren`). A single-child modifier with several children stacks
   them vertically.
 - Stacks follow SwiftUI's algorithm: higher `layoutPriority` first, then least
-  flexible first, and each child is offered `remaining / remainingCount`.
+  flexible first. Each child is offered the larger of an equal share
+  (`remaining / remainingCount`) and its ideal length, if the ideal still
+  leaves the unprocessed siblings their minimums. That is how
+  `HStack { Spacer(); Text("Test"); Spacer() }` centres the word instead of
+  wrapping it. A child's minimum is the smaller of its lengths when offered
+  0 and 1 cell. Text offered 0 doesn't wrap, as in Ink (wrap-ansi with 0
+  columns), but it can shrink to one column.
+- Stacks place children at the stack's final cross size, not the original
+  proposal, so `.frame(maxWidth: .infinity)` children of a `.fixedSize()`
+  `VStack` stretch to the widest sibling (Ink's `alignItems: stretch`).
+- Text draws with the lines computed for the proposal it was placed with
+  (`ViewNode.placementProposal`), because head and middle truncation aren't
+  idempotent at the measured width.
   `VStack` defaults to `.leading` and `HStack` to `.top`, which suits terminals better
   than SwiftUI's `.center`.
 - `Spacer` reads the enclosing stack's axis from the environment.
@@ -107,9 +119,10 @@ Ink keeps every `aria-*` prop on one element.
   exit()` drew the final frame without the change. Nodes now go into a
   `Mutex`-protected `InvalidationQueue`, which every flush drains first
   ([InvalidationQueue.swift](../../Sources/Stipple/State/InvalidationQueue.swift)).
-- **Text reports a real minimum width.** A proposal of width 0 is treated as
-  1, so text wraps down to a column per line. Otherwise stacks see the unwrapped
-  width as the minimum and starve higher-priority children.
+- **Text minimum width, revised.** Treating a width-0 proposal as 1 helped
+  stacks but broke Ink parity: in Ink, text in a zero-width box overflows
+  unwrapped. The stack now measures a child's minimum as
+  `min(length(0), length(1))` instead.
 - **`.frame(idealWidth:)` answers ideal-size proposals.** With neither min nor
   max set, a flexible frame returns its ideal size when asked for the ideal size
   (`fixedSize()`), as in SwiftUI.

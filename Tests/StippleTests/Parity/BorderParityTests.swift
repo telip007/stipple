@@ -114,9 +114,7 @@ struct BorderParityTests {
 
     @Test func nestedBoxesInAColumnStretchToTheWidest() {
         let words = ["ミスター", "スポック", "カーク船長"]
-        withKnownIssue("A VStack sized by fixedSize doesn't re-offer its final width to maxWidth: .infinity children") {
-            #expect(plain(stretchedColumn(words)) == stretchedColumnExpected(words))
-        }
+        #expect(plain(stretchedColumn(words)) == stretchedColumnExpected(words))
     }
 
     // MARK: hidden sides

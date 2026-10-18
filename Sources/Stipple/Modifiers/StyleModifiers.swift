@@ -41,6 +41,13 @@ extension View {
         environmentChange { $0.lineLimit = number }
     }
 
+    /// How text breaks lines wider than the offered space. `.truncate` shortens
+    /// every line on its own, like Ink's `wrap="truncate"`; `.lineLimit(1)`
+    /// instead keeps only the first line, as in SwiftUI.
+    public func textWrapping(_ wrapping: TextWrapping) -> some View {
+        environmentChange { $0.textWrapping = wrapping }
+    }
+
     /// Where text that doesn't fit is shortened.
     public func truncationMode(_ mode: TruncationMode) -> some View {
         environmentChange { $0.truncationMode = mode }

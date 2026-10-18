@@ -7,7 +7,8 @@ extension Stipple {
         let graph = ViewGraph()
         graph.mount(view, environment: EnvironmentValues())
         defer { graph.unmountAll() }
-        return FrameRenderer(graph: graph).render(width: width, height: nil).frame
+        let staticOutput = graph.takeStaticOutput(width: width)
+        return staticOutput + FrameRenderer(graph: graph).render(width: width, height: nil).frame
     }
 }
 

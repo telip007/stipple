@@ -85,11 +85,11 @@ struct RenderToStringTests {
         #expect(output.contains("ok"))
     }
 
-    @Test func staticTakesNoSpaceInFrame() {
+    @Test func staticOutputPrecedesFrame() {
         let view = VStack {
             Static(["a", "b"]) { Text($0) }
             Text("live")
         }
-        #expect(plain(view) == "live")
+        #expect(plain(view) == "a\nb\nlive")
     }
 }

@@ -148,7 +148,8 @@ the layout protocol and stacks, modifiers, `Static`, the render loop with
 | `overflow="hidden"` | `.clipped()` |
 | `position="absolute"` | `.overlay(alignment:) { }`, `.background(alignment:) { }`, `ZStack` |
 | `<Text color bold …>` | `Text("…").foregroundStyle(.green).bold().italic().underline().strikethrough().dim().inverse()` |
-| `wrap="truncate-end"` | `.lineLimit(1).truncationMode(.tail)` |
+| `wrap="truncate-end"` | `.textWrapping(.truncate).truncationMode(.tail)`: each line cut on its own. `.lineLimit(1)` keeps only the first line, as in SwiftUI |
+| `wrap="hard"` | `.textWrapping(.characters)` |
 | `<Newline/>` | `"\n"` inside `Text` |
 | `<Spacer/>` | `Spacer()` |
 | `<Static items>` | `Static(items) { item in … }` |

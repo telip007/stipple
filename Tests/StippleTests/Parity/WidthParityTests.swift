@@ -126,12 +126,7 @@ struct WidthParityTests {
     func truncationKeepsWideCharactersThatFit(mode: TruncationMode, expected: String) {
         let text = Text("你好世界").lineLimit(1).truncationMode(mode)
         let check = { #expect(plain(text.frame(width: 4, alignment: .leading)) == expected) }
-        if mode == .middle {
-            withKnownIssue(
-                "Text truncates again at its measured width when drawing; .middle isn't stable (gives '…')", check)
-        } else {
-            check()
-        }
+        check()
     }
 
     @Test(arguments: [
@@ -143,11 +138,7 @@ struct WidthParityTests {
             Text("|")
         }
         let check = { #expect(plain(view) == "\(expected) |") }
-        if mode == .middle {
-            withKnownIssue("Same re-truncation problem as above", check)
-        } else {
-            check()
-        }
+        check()
     }
 
     @Test func textThatFitsDoesNotReserveExtraWidth() {

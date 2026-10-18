@@ -32,8 +32,10 @@ struct ComponentParityTests {
         #expect(plain(Text("Hello World").frame(width: 20, alignment: .leading)) == "Hello World")
     }
 
-    @Test(.disabled("No hard-wrap mode (Ink wrap=\"hard\" gives 'Hello W\\norld'); Text always breaks at spaces"))
-    func hardWrapText() {}
+    @Test func hardWrapText() {
+        let view = Text("Hello World").textWrapping(.characters).frame(width: 7, alignment: .leading)
+        #expect(plain(view) == "Hello W\norld")
+    }
 
     @Test func hardWrapWithLongWord() {
         #expect(plain(Text("aaaaaaaaaa").frame(width: 5, alignment: .leading)) == "aaaaa\naaaaa")
@@ -55,11 +57,11 @@ struct ComponentParityTests {
     }
 
     @Test func truncatesEachLineOfMultilineText() {
-        // Ink's `truncate` cuts every line on its own and keeps all lines. SwiftUI's lineLimit(1) shows only the first.
-        let view = Text("hello world\nfoo").lineLimit(1).frame(width: 6, alignment: .leading)
-        withKnownIssue("lineLimit(1) drops the lines after the first instead of truncating each line") {
-            #expect(plain(view) == "hello…\nfoo")
-        }
+        // Ink's `truncate` cuts every line on its own and keeps all lines: `.textWrapping(.truncate)`.
+        // SwiftUI's lineLimit(1) shows only the first line.
+        let view = Text("hello world\nfoo").textWrapping(.truncate).frame(width: 6, alignment: .leading)
+        #expect(plain(view) == "hello…\nfoo")
+        #expect(plain(Text("hello world\nfoo").lineLimit(1).frame(width: 6, alignment: .leading)) == "hello…")
     }
 
     @Test(arguments: [
@@ -183,9 +185,7 @@ struct ComponentParityTests {
             Static(["A", "B"]) { Text($0) }
             Text("live")
         }
-        withKnownIssue("renderToString leaves out Static items; Ink's renderToString returns them before the frame") {
-            #expect(plain(view) == "A\nB\nlive")
-        }
+        #expect(plain(view) == "A\nB\nlive")
     }
 
     // MARK: Transform

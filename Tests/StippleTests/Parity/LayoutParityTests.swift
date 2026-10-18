@@ -66,9 +66,7 @@ struct LayoutParityTests {
             Static(["A", "B", "C"]) { Text($0) }
             Text("Dynamic")
         }
-        withKnownIssue("renderToString leaves out Static items (see ComponentParityTests)") {
-            #expect(plain(view) == "A\nB\nC\nDynamic")
-        }
+        #expect(plain(view) == "A\nB\nC\nDynamic")
     }
 
     @Test func staticInsideAHiddenAncestorIsSkipped() {

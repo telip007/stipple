@@ -30,18 +30,22 @@ struct StackLayout: NodeLayout {
     }
 
     func place(_ children: [ViewNode], in bounds: Rect, proposal: ProposedSize) {
-        let crossProposal = proposal.dimension(cross)
+        // Children are placed at the stack's final cross size, so views that
+        // fill the offered space (`.frame(maxWidth: .infinity)`) stretch to the
+        // widest sibling even when the stack itself was sized ideally.
+        let crossLength = bounds.size.dimension(cross)
         let sizes = distribute(children, proposal: proposal)
         var cursor = axis == .horizontal ? bounds.minX : bounds.minY
         for (child, size) in zip(children, sizes) {
-            let childProposal = ProposedSize.along(axis, size.dimension(axis), cross: crossProposal)
+            let childProposal = ProposedSize.along(axis, size.dimension(axis), cross: crossLength)
+            let placed = child.sizeThatFits(childProposal)
             let origin: Point
             if axis == .horizontal {
                 origin = Point(
-                    x: cursor, y: bounds.minY + alignment.vertical.offset(child: size.height, in: bounds.size.height))
+                    x: cursor, y: bounds.minY + alignment.vertical.offset(child: placed.height, in: crossLength))
             } else {
                 origin = Point(
-                    x: bounds.minX + alignment.horizontal.offset(child: size.width, in: bounds.size.width), y: cursor)
+                    x: bounds.minX + alignment.horizontal.offset(child: placed.width, in: crossLength), y: cursor)
             }
             child.place(at: origin, proposal: childProposal)
             cursor += size.dimension(axis) + spacing
@@ -61,20 +65,24 @@ struct StackLayout: NodeLayout {
             // Ideal size: every child at its ideal size.
             return children.map { $0.sizeThatFits(.along(axis, nil, cross: crossProposal)) }
         }
-        let minimums = children.map { $0.sizeThatFits(.along(axis, 0, cross: crossProposal)).dimension(axis) }
-        let maximums = children.map { $0.sizeThatFits(.along(axis, .infinity, cross: crossProposal)).dimension(axis) }
+        let lengths = children.map { measure($0, cross: crossProposal) }
         var remaining = available - totalSpacing(children.count)
         var sizes = [Size](repeating: .zero, count: children.count)
         let groups = Dictionary(grouping: children.indices) { children[$0].layoutPriority }
-        var lowerMinimum = minimums.reduce(0, +)
+        var lowerMinimum = lengths.reduce(0) { $0 + $1.minimum }
         for priority in groups.keys.sorted(by: >) {
-            let members = groups[priority, default: []].sorted {
-                maximums[$0] - minimums[$0] < maximums[$1] - minimums[$1]
-            }
-            lowerMinimum -= members.reduce(0) { $0 + minimums[$1] }
+            let members = groups[priority, default: []].sorted { lengths[$0].flexibility < lengths[$1].flexibility }
+            lowerMinimum -= members.reduce(0) { $0 + lengths[$1].minimum }
             var groupRemaining = max(0, remaining - lowerMinimum)
+            var unprocessedMinimum = members.reduce(0) { $0 + lengths[$1].minimum }
             for (position, index) in members.enumerated() {
-                let offer = max(0, groupRemaining / (members.count - position))
+                unprocessedMinimum -= lengths[index].minimum
+                // An equal share, or the child's ideal length if that still
+                // leaves the others their minimum: a word next to spacers
+                // keeps its natural width instead of wrapping.
+                let share = groupRemaining / (members.count - position)
+                let affordable = min(lengths[index].ideal, groupRemaining - unprocessedMinimum)
+                let offer = max(0, max(share, affordable))
                 let size = children[index].sizeThatFits(.along(axis, offer, cross: crossProposal))
                 sizes[index] = size
                 groupRemaining -= size.dimension(axis)
@@ -82,6 +90,26 @@ struct StackLayout: NodeLayout {
             }
         }
         return sizes
+    }
+
+    private struct Lengths {
+        var minimum: Int
+        var ideal: Int
+        var maximum: Int
+        var flexibility: Int { maximum - minimum }
+    }
+
+    /// A child's minimum, ideal and maximum length along the axis. The
+    /// minimum is the smaller of the lengths offered 0 and 1 cell, because
+    /// text offered 0 doesn't wrap (as in Ink) but can shrink to one column.
+    private func measure(_ child: ViewNode, cross crossProposal: Int?) -> Lengths {
+        let zero = child.sizeThatFits(.along(axis, 0, cross: crossProposal)).dimension(axis)
+        let one = child.sizeThatFits(.along(axis, 1, cross: crossProposal)).dimension(axis)
+        return Lengths(
+            minimum: min(zero, one),
+            ideal: child.sizeThatFits(.along(axis, nil, cross: crossProposal)).dimension(axis),
+            maximum: child.sizeThatFits(.along(axis, .infinity, cross: crossProposal)).dimension(axis),
+        )
     }
 }
 

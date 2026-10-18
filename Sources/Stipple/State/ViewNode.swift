@@ -26,6 +26,8 @@ final class ViewNode {
     var behaviors = NodeBehaviors()
     /// Where the node was placed in the last layout pass.
     private(set) var frame = Rect(x: 0, y: 0, width: 0, height: 0)
+    /// The proposal the node was placed with in the last layout pass.
+    private(set) var placementProposal = ProposedSize.unspecified
     private(set) var isMounted = true
     var isDirty = false
     let depth: Int
@@ -149,6 +151,7 @@ final class ViewNode {
     /// Places the node at `origin` with the size it wants for `proposal`.
     func place(at origin: Point, proposal: ProposedSize) {
         frame = Rect(origin: origin, size: sizeThatFits(proposal))
+        placementProposal = proposal
         if let layout {
             layout.placeChildren(of: self, in: frame, proposal: proposal)
         } else {

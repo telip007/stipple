@@ -14,6 +14,10 @@ struct TruncationModeKey: EnvironmentKey {
     static let defaultValue = TruncationMode.tail
 }
 
+struct TextWrappingKey: EnvironmentKey {
+    static let defaultValue = TextWrapping.words
+}
+
 struct MultilineTextAlignmentKey: EnvironmentKey {
     static let defaultValue = TextAlignment.leading
 }
@@ -41,6 +45,12 @@ extension EnvironmentValues {
     public var truncationMode: TruncationMode {
         get { self[TruncationModeKey.self] }
         set { self[TruncationModeKey.self] = newValue }
+    }
+
+    /// How text breaks lines wider than the offered space.
+    public var textWrapping: TextWrapping {
+        get { self[TextWrappingKey.self] }
+        set { self[TextWrappingKey.self] = newValue }
     }
 
     /// How lines of multi-line text align.

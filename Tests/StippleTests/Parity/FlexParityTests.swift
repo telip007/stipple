@@ -51,9 +51,7 @@ struct FlexParityTests {
             Text("Test")
             Spacer()
         }.frame(width: 10, alignment: .topLeading)
-        withKnownIssue("HStack { Spacer; Text; Spacer } offers each child 1/3 of the width, so a single word wraps") {
-            #expect(plain(view) == "   Test")
-        }
+        #expect(plain(view) == "   Test")
         #expect(plain(Text("Test").frame(width: 10, alignment: .top)) == "   Test")
     }
 

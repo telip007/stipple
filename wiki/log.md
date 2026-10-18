@@ -40,3 +40,6 @@ Added `Divider`, `.hidden()` and `.disabled(_:)` (handlers and focus respect `is
 
 ## [2026-10-18] update | README demos and README example tests
 Scripted VHS tapes for the counter, tasks and chat examples record GIF, MP4 and PNG into `.github/assets/demos/` (`make demos`); README gets a hero GIF and an Examples section; `ReadmeExampleTests` compiles and renders the README's Swift snippet.
+
+## [2026-10-18] update | Ink parity fixes from the QA suite
+Merged about 190 parity tests ported from Ink. Fixed: Static output in renderToString, re-truncation when drawing, word wrapping next to spacers (stacks now offer the ideal length), the stretch idiom (placement at the final cross size), and per-line truncation and hard wrapping via `.textWrapping(_:)`.
