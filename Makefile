@@ -49,7 +49,7 @@ test-linux:
 # Re-record the README demos (needs `brew install vhs`; macOS, because the chat
 # demo pastes from the clipboard). Outputs land in .github/assets/demos/.
 demos:
-	@for product in counter tasks chat; do swift build -c release --product $$product || exit 1; done
+	@for product in counter tasks chat logs; do swift build -c release --product $$product || exit 1; done
 	printf 'Pasted via bracketed paste.' | pbcopy
 	@for tape in Scripts/demos/*.tape; do \
 		echo "recording $$tape"; \

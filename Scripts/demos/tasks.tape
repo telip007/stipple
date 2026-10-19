@@ -6,8 +6,8 @@ Output .github/assets/demos/tasks.mp4
 Set Shell "bash"
 Set Theme "Catppuccin Frappe"
 Set FontSize 18
-Set Width 760
-Set Height 440
+Set Width 900
+Set Height 360
 Set Padding 24
 Set Framerate 20
 Set PlaybackSpeed 1
@@ -24,5 +24,4 @@ Sleep 600ms
 Type "tasks" Sleep 400ms Enter
 Sleep 2s
 Screenshot .github/assets/demos/tasks.png
-Sleep 2s
-Sleep 2500ms
+Sleep 6s

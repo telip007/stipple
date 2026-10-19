@@ -94,3 +94,6 @@ For long scrollbacks: lazy moves, culling of off-screen rows in drawing and hit 
 
 ## [2026-10-19] update | LazyVStack
 `LazyVStack` lays out long scroll content near the view first: a resize of a bottom-pinned chat measures the rows from the bottom up and the rest over the next frames; a view resting elsewhere keeps its first row in place (scroll anchoring) while rows above settle. Same placement lazy or not, so scrolling between the two costs nothing extra. See [view system](concepts/view-system.md#retained-layout).
+
+## [2026-10-19] update | Examples and demos for the current feature set
+New `logs` example (alternate screen, `SelectionList`, `ScrollView` over a `LazyVStack` that follows new lines, filter `TextField`, mouse wheel, click, hover and tap) and hero GIF. `chat` now streams a pretend assistant's replies after a spinner; `tasks` runs three jobs at a time with spinner styles and progress bars. All demos re-recorded; README feature list and examples updated. See [demos](concepts/demos.md).

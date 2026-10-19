@@ -11,7 +11,7 @@ with the SwiftUI API you already know.
 </p>
 
 <p align="center">
-  <img src=".github/assets/demos/chat.gif" alt="A chat REPL built with Stipple: messages scroll into the terminal history while the input line stays live" width="720">
+  <img src=".github/assets/demos/logs.gif" alt="A full-screen log viewer built with Stipple: a service list, a scroll view of thousands of lines that follows new ones, pauses when scrolled up and resumes at the bottom, and a filter field" width="820">
 </p>
 
 - **SwiftUI-shaped API:** `View`, `@ViewBuilder`, `VStack`/`HStack`, modifiers,
@@ -19,6 +19,12 @@ with the SwiftUI API you already know.
 - **Ink's runtime behaviour:** inline rendering below the shell prompt, `Static`
   scrollback, throttled frames, raw-mode input, focus with Tab, optional
   alternate screen, plain output in CI and pipes.
+- **Batteries included:** text fields, spinners, progress bars, selection
+  lists, `ScrollView` with chat-style bottom pinning, `LazyVStack` for long
+  content, and opt-in mouse support (wheel, click to focus, taps, hover).
+- **Frames cost what is on screen:** layout is kept across frames, streamed
+  text only wraps its new tail, and a scroll view over thousands of rows draws
+  only the rows in view.
 - **Never leaves your terminal broken:** raw mode, cursor and alternate screen
   are restored on exit, on error and on crash.
 - **Swift 6, strict concurrency**, on macOS and Linux.
@@ -84,7 +90,7 @@ The examples in this README are compiled and run by
 
 ## Examples
 
-Three runnable examples live in [`Examples/`](Examples). Clone the repository and
+Four runnable examples live in [`Examples/`](Examples). Clone the repository and
 run them with `swift run <name>`. The recordings are scripted with
 [VHS](https://github.com/charmbracelet/vhs) (`make demos`).
 
@@ -96,27 +102,46 @@ run them with `swift run <name>`. The recordings are scripted with
 
 [Watch in higher quality](.github/assets/demos/counter.mp4)
 
-### Tasks: `Static` scrollback and a spinner
+### Logs: a full-screen app with scrolling, focus and the mouse
 
-`swift run tasks`
+`swift run logs`
 
-Finished tasks scroll into the terminal's history with `Static` while a
-`ProgressView` spinner and progress bar show the running one.
+An alternate-screen log viewer: a `SelectionList` of services, a `ScrollView`
+over a `LazyVStack` of 5,000 lines that follows new ones while it rests at the
+bottom (`.defaultScrollAnchor(.bottom)`), pauses when you scroll up, and
+resumes at the bottom, plus a `TextField` that filters as you type. Tab moves
+focus between panes; with `RenderOptions.mouseReporting` the wheel scrolls, a
+click focuses a pane or picks a service, and the follow badge reacts to hover
+and clicks.
 
-<img src=".github/assets/demos/tasks.gif" alt="Eight tasks complete one after another, each leaving a check mark in the scrollback" width="380">
+<img src=".github/assets/demos/logs.gif" alt="Picking a service, scrolling up through the log while new lines arrive, returning to the bottom and filtering" width="720">
 
-[Watch in higher quality](.github/assets/demos/tasks.mp4) · [Still](.github/assets/demos/tasks.png)
+[Watch in higher quality](.github/assets/demos/logs.mp4) · [Still](.github/assets/demos/logs.png)
 
-### Chat: a REPL with a live input line
+### Chat: streaming replies with a live input line
 
 `swift run chat`
 
-A `TextField` with `.onSubmit`, bracketed paste and a real terminal cursor
-(so input methods work). Sent messages move into scrollback.
+A pretend assistant: a `TextField` with `.onSubmit`, a spinner while it
+"thinks", and a reply that streams in word by word into one growing `Text`.
+Finished messages move into scrollback with `Static`. Bracketed paste and a
+real terminal cursor (so input methods work) come with the field.
 
-<img src=".github/assets/demos/chat.gif" alt="Typing and pasting messages into the chat example" width="560">
+<img src=".github/assets/demos/chat.gif" alt="Sending messages to the chat example and watching the replies stream in" width="640">
 
 [Watch in higher quality](.github/assets/demos/chat.mp4) · [Still](.github/assets/demos/chat.png)
+
+### Tasks: parallel jobs, spinners and progress bars
+
+`swift run tasks`
+
+A build that runs three jobs at a time, each with its own spinner style and
+progress bar, under an overall bar. Finished jobs scroll into the terminal's
+history with `Static`, and the app exits when the last one is done.
+
+<img src=".github/assets/demos/tasks.gif" alt="Build jobs run three at a time with spinners and progress bars; finished ones leave a check mark in the scrollback" width="640">
+
+[Watch in higher quality](.github/assets/demos/tasks.mp4) · [Still](.github/assets/demos/tasks.png)
 
 ## Components
 
