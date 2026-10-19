@@ -32,7 +32,7 @@ with the SwiftUI API you already know.
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/telip007/stipple.git", from: "0.3.2"), // x-release-please-version
+    .package(url: "https://github.com/telip007/stipple.git", from: "0.3.3"), // x-release-please-version
 ],
 targets: [
     .executableTarget(name: "MyTool", dependencies: [
