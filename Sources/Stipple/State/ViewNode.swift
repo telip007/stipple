@@ -78,6 +78,7 @@ final class ViewNode {
     /// Re-evaluates the node's view and reconciles its children.
     func rebuild() {
         isDirty = false
+        graph.treeChanged()
         invalidateSizes()
         invalidatePlacement()
         layout = nil

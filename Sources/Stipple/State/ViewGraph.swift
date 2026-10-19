@@ -15,6 +15,22 @@ final class ViewGraph {
 
     /// Called when something needs a new frame.
     var onNeedsRender: @MainActor () -> Void = {}
+    /// Counts changes to the tree (rebuilds, unmounts), so derived lists can
+    /// be cached until the next one.
+    private(set) var revision = 0
+    /// The key handlers for a revision and focused node.
+    var keyHandlerCache: KeyHandlerCache?
+
+    struct KeyHandlerCache {
+        let revision: Int
+        let focused: ObjectIdentifier?
+        let handlers: [@MainActor (KeyPress) -> KeyPress.Result]
+    }
+
+    /// Notes a change to the tree.
+    func treeChanged() {
+        revision &+= 1
+    }
 
     init() {
         invalidations.onEnqueue = { [weak self] in
@@ -107,6 +123,7 @@ final class ViewGraph {
     }
 
     func unmounted(_ node: ViewNode) {
+        treeChanged()
         for action in node.behaviors.onDisappear {
             action()
         }

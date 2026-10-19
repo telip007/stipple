@@ -13,7 +13,16 @@ struct TextNodeLayout: NodeLayout {
     /// drawing), so wrapping runs once per width instead.
     private let cache = LineCache()
 
-    init(runs: [StyledRun], environment: EnvironmentValues) {
+    /// Widths from here up hold any line: half of `Int.infinity`, which
+    /// stays this large after insets and borders are taken off it.
+    static let unlimitedWidth = Int.infinity / 2
+
+    /// Where wrapping stopped last time, by width, kept by the node across
+    /// rebuilds; `nil` wraps from the start every time.
+    private let checkpoints: WrapCheckpoints?
+
+    init(runs: [StyledRun], environment: EnvironmentValues, checkpoints: WrapCheckpoints? = nil) {
+        self.checkpoints = checkpoints
         transform = environment.isScreenReaderEnabled ? nil : environment.textTransform
         wrapping = environment.textWrapping
         self.runs = runs
@@ -23,24 +32,42 @@ struct TextNodeLayout: NodeLayout {
     }
 
     func lines(width: Int?) -> [[StyledRun]] {
+        let width = effectiveWidth(width)
         if let cached = cache.lines[width] { return cached }
         let lines = layOut(width: width)
         cache.lines[width] = lines
         return lines
     }
 
+    /// `width`, or `nil` for unlimited room without a line limit: such text
+    /// doesn't wrap, so it is laid out as for its ideal size, which a growing
+    /// text would otherwise redo as one ever longer row. (With a line limit a
+    /// cut is marked with `…`, which the ideal size doesn't do.)
+    private func effectiveWidth(_ width: Int?) -> Int? {
+        guard let width, lineLimit == nil, width >= Self.unlimitedWidth else { return width }
+        return nil
+    }
+
     private func layOut(width: Int?) -> [[StyledRun]] {
-        let hardLines = TextLayout.lines(runs)
         // Width 0 means "no constraint" for wrapping, as wrap-ansi treats 0 columns (Ink parity).
-        guard let width, width > 0 else { return Array(hardLines.prefix(lineLimit ?? .max)) }
+        guard let width, width > 0 else { return Array(TextLayout.lines(runs).prefix(lineLimit ?? .max)) }
         if lineLimit == 1 {
-            return hardLines.prefix(1).map { TextLayout.truncate($0, width: width, mode: truncationMode) }
+            return TextLayout.lines(runs).prefix(1).map { TextLayout.truncate($0, width: width, mode: truncationMode) }
         }
         let wrapped: [[StyledRun]]
         switch wrapping {
-        case .words: wrapped = hardLines.flatMap { TextLayout.wrap($0, width: width) }
-        case .characters: wrapped = hardLines.flatMap { Self.characterWrap($0, width: width) }
-        case .truncate: wrapped = hardLines.map { TextLayout.truncate($0, width: width, mode: truncationMode) }
+        case .words:
+            if let checkpoints {
+                // Text that only grew, as a reply being streamed, wraps from where it stopped.
+                let result = TextLayout.wrap(runs, width: width, resuming: checkpoints.byWidth[width])
+                checkpoints.byWidth[width] = result.checkpoint
+                wrapped = result.lines
+            } else {
+                wrapped = TextLayout.lines(runs).flatMap { TextLayout.wrap($0, width: width) }
+            }
+        case .characters: wrapped = TextLayout.lines(runs).flatMap { Self.characterWrap($0, width: width) }
+        case .truncate:
+            wrapped = TextLayout.lines(runs).map { TextLayout.truncate($0, width: width, mode: truncationMode) }
         }
         guard let lineLimit, wrapped.count > lineLimit, lineLimit > 0 else { return wrapped }
         if truncationMode == .head {
@@ -59,11 +86,12 @@ struct TextNodeLayout: NodeLayout {
 
     func sizeThatFits(_ proposal: ProposedSize, node: ViewNode) -> Size {
         guard runs.contains(where: { !$0.text.isEmpty }) else { return .zero }
-        if let cached = cache.sizes[proposal.width] { return cached }
-        let lines = lines(width: proposal.width)
+        let key = effectiveWidth(proposal.width)
+        if let cached = cache.sizes[key] { return cached }
+        let lines = lines(width: key)
         let width = lines.map { line in line.reduce(0) { $0 + TextMetrics.width(of: $1.text) } }.max() ?? 0
         let size = Size(width: width, height: lines.count)
-        cache.sizes[proposal.width] = size
+        cache.sizes[key] = size
         return size
     }
 
@@ -82,6 +110,12 @@ struct TextNodeLayout: NodeLayout {
             canvas.write(drawn, at: Point(x: frame.minX + offset, y: frame.minY + row), clip: clip)
         }
     }
+}
+
+/// Where a text node's wrapping stopped, by width, kept across rebuilds.
+@MainActor
+final class WrapCheckpoints {
+    var byWidth: [Int: WrapCheckpoint] = [:]
 }
 
 /// The lines and sizes one ``TextNodeLayout`` worked out, by width.

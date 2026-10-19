@@ -119,9 +119,28 @@ enum TextLayout {
     }
 
     private static func wrapLine(_ graphemes: [StyledGrapheme], width: Int) -> [[StyledGrapheme]] {
-        var rows: [[StyledGrapheme]] = [[]]
-        var rowWidth = 0
+        var wrapper = LineWrapper(width: width, row: [])
         for word in split(graphemes) {
+            wrapper.add(word)
+        }
+        return wrapper.rows
+    }
+
+    /// Greedy word wrapping of one line, a word at a time. Its whole state is
+    /// the rows so far, and only the last row affects where later words go,
+    /// so wrapping can stop between words and resume from the open row.
+    private struct LineWrapper {
+        let width: Int
+        var rows: [[StyledGrapheme]]
+        var rowWidth: Int
+
+        init(width: Int, row: [StyledGrapheme]) {
+            self.width = width
+            rows = [row]
+            rowWidth = row.reduce(0) { $0 + $1.width }
+        }
+
+        mutating func add(_ word: Word) {
             let wordWidth = word.items.reduce(0) { $0 + $1.width }
             if let space = word.separator {
                 if rowWidth >= width {
@@ -136,9 +155,9 @@ enum TextLayout {
                 let breaksThisLine = 1 + (wordWidth - remaining - 1) / width
                 let breaksNextLine = (wordWidth - 1) / width
                 if breaksNextLine < breaksThisLine { rows.append([]) }
-                breakWord(word.items, into: &rows, width: width)
+                TextLayout.breakWord(word.items, into: &rows, width: width)
                 rowWidth = rows[rows.count - 1].reduce(0) { $0 + $1.width }
-                continue
+                return
             }
             if rowWidth + wordWidth > width && rowWidth > 0 && wordWidth > 0 {
                 rows.append([])
@@ -147,11 +166,10 @@ enum TextLayout {
             rows[rows.count - 1].append(contentsOf: word.items)
             rowWidth += wordWidth
         }
-        return rows
     }
 
     /// Fills rows with a word wider than a line, one full row at a time.
-    private static func breakWord(_ word: [StyledGrapheme], into rows: inout [[StyledGrapheme]], width: Int) {
+    fileprivate static func breakWord(_ word: [StyledGrapheme], into rows: inout [[StyledGrapheme]], width: Int) {
         var visible = rows[rows.count - 1].reduce(0) { $0 + $1.width }
         for (index, grapheme) in word.enumerated() {
             if visible + grapheme.width <= width || rows[rows.count - 1].isEmpty {
@@ -168,10 +186,10 @@ enum TextLayout {
         }
     }
 
-    private typealias Word = (separator: StyledGrapheme?, items: [StyledGrapheme])
+    fileprivate typealias Word = (separator: StyledGrapheme?, items: [StyledGrapheme])
 
     /// Words with the space that precedes each one (the first has none).
-    private static func split(_ graphemes: [StyledGrapheme]) -> [Word] {
+    fileprivate static func split(_ graphemes: [StyledGrapheme]) -> [Word] {
         var words: [Word] = [(nil, [])]
         for grapheme in graphemes {
             if grapheme.character == " " {
@@ -181,5 +199,95 @@ enum TextLayout {
             }
         }
         return words
+    }
+}
+
+/// Where word-wrapping a text at one width stopped: before the last word of
+/// its last line. The same text with more appended, as a reply being
+/// streamed, carries on from here instead of wrapping from the start.
+struct WrapCheckpoint {
+    /// The text that was wrapped.
+    var runs: [StyledRun]
+    /// Rows that appending can't change: those of the earlier lines, and the
+    /// last line's rows before the open one.
+    var finished: [[StyledRun]]
+    /// The last line's open row, before its last word.
+    var row: [StyledGrapheme]
+    /// The last word, with the space before it.
+    var lastWord: [StyledGrapheme]
+}
+
+extension TextLayout {
+    /// Word-wraps `runs` to `width` (at least 1) like ``wrap(_:width:)``,
+    /// continuing from `checkpoint` when `runs` is its text with more
+    /// appended, and returns where to continue next time.
+    static func wrap(
+        _ runs: [StyledRun], width: Int, resuming checkpoint: WrapCheckpoint?,
+    ) -> (lines: [[StyledRun]], checkpoint: WrapCheckpoint) {
+        var finished: [[StyledRun]]
+        var open: (row: [StyledGrapheme], lastWord: [StyledGrapheme])
+        var pending: [[StyledRun]]
+        if let checkpoint, let appended = appended(to: checkpoint.runs, in: runs) {
+            finished = checkpoint.finished
+            open = (checkpoint.row, checkpoint.lastWord)
+            pending = lines(appended)
+            // The first appended line continues the open one.
+            let first = pending.removeFirst()
+            open.lastWord += StyledGrapheme.graphemes(of: first)
+        } else {
+            finished = []
+            open = ([], [])
+            pending = lines(runs)
+            open.lastWord = StyledGrapheme.graphemes(of: pending.removeFirst())
+        }
+        for line in pending {
+            // A newline closes the open line.
+            finished += place(open.lastWord, after: open.row, width: width).map(StyledGrapheme.runs)
+            open = ([], StyledGrapheme.graphemes(of: line))
+        }
+        // Place every word of the open line but the last, which may still grow.
+        var words = split(open.lastWord)
+        let last = words.removeLast()
+        var wrapper = LineWrapper(width: width, row: open.row)
+        for word in words {
+            wrapper.add(word)
+        }
+        let row = wrapper.rows.removeLast()
+        finished += wrapper.rows.map(StyledGrapheme.runs)
+        let lastWord = (last.separator.map { [$0] } ?? []) + last.items
+        let tail = place(lastWord, after: row, width: width).map(StyledGrapheme.runs)
+        return (finished + tail, WrapCheckpoint(runs: runs, finished: finished, row: row, lastWord: lastWord))
+    }
+
+    /// The rows `graphemes` take after `row`.
+    private static func place(
+        _ graphemes: [StyledGrapheme], after row: [StyledGrapheme], width: Int
+    )
+        -> [[StyledGrapheme]]
+    {
+        var wrapper = LineWrapper(width: width, row: row)
+        for word in split(graphemes) {
+            wrapper.add(word)
+        }
+        return wrapper.rows
+    }
+
+    /// What `runs` adds to `old`, when `runs` is `old` with text appended
+    /// that can be wrapped on its own: no tab, whose columns depend on the
+    /// line before it, and no character that joins the last one of `old`.
+    private static func appended(to old: [StyledRun], in runs: [StyledRun]) -> [StyledRun]? {
+        guard let lastOld = old.last, runs.count >= old.count else { return nil }
+        let shared = old.count - 1
+        guard runs.prefix(shared).elementsEqual(old.prefix(shared)) else { return nil }
+        let grown = runs[shared]
+        guard grown.style == lastOld.style, grown.text.hasPrefix(lastOld.text) else { return nil }
+        let rest = String(grown.text.utf8.dropFirst(lastOld.text.utf8.count)) ?? ""
+        var added = [StyledRun(text: rest, style: grown.style)] + runs.dropFirst(old.count)
+        added.removeAll { $0.text.isEmpty }
+        guard !added.contains(where: { $0.text.contains("\t") }) else { return nil }
+        if let end = old.last(where: { !$0.text.isEmpty })?.text.last, let start = added.first?.text.first {
+            guard (String(end) + String(start)).count == 2 else { return nil }
+        }
+        return added.isEmpty ? [StyledRun(text: "", style: grown.style)] : added
     }
 }

@@ -134,10 +134,16 @@ final class Runtime {
     func handle(_ event: TerminalEvent) {
         switch event {
         case .input(let bytes):
+            var typed = false
             for input in parser.parse(bytes) {
                 handle(input)
+                if case .key = input { typed = true }
+                if case .paste = input { typed = true }
             }
             scheduleEscapeFlush()
+            if typed {
+                renderTypedInput()
+            }
         case .resize:
             writer.resized()
             graph.update(AnyView(rootView), environment: makeEnvironment())
@@ -172,10 +178,20 @@ final class Runtime {
             } else {
                 await Task.yield()
             }
-            guard let self else { return }
+            guard let self, !Task.isCancelled else { return }
             self.renderTask = nil
             self.render()
         }
+    }
+
+    /// Draws what a key press or paste changed now rather than at the next
+    /// throttled frame: typing comes at the user's pace, and waiting up to a
+    /// frame interval for each key is what makes typing feel laggy.
+    private func renderTypedInput() {
+        guard renderTask != nil || graph.hasPendingWork, exitResult == nil else { return }
+        renderTask?.cancel()
+        renderTask = nil
+        render()
     }
 
     /// Rebuilds invalidated views, lays out, and writes the frame.

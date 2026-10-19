@@ -112,7 +112,25 @@ milliseconds with these:
   state or have effects while placing, so they and their ancestors are placed
   every frame; pure content inside them is not. A new layout that reads state
   in `placeChildren` must keep `placesPurely` false.
+- **Growing text wraps from where it stopped.** Word wrapping is greedy and
+  keeps every character, so its state between words is just the rows so far.
+  A `Text` node keeps a `WrapCheckpoint` per width in its storage (it
+  outlives rebuilds): the rows that appending can't change, the open row, and
+  the last word. When the new text is the old text with more appended,
+  wrapping resumes before that word (0.07 ms instead of 5 ms for a 4,000
+  character paragraph in a debug build). Anything else, including appended
+  tabs or a character that joins the previous one, wraps from the start.
+- **Unlimited width is the ideal size.** Text offered `Int.infinity` (less
+  insets) without a line limit is laid out as for its ideal size, instead of
+  as one ever longer row.
 - **`layoutChildren`** is cached until the node or one below it rebuilds.
+- **Key handlers** are collected once per tree revision (`ViewGraph.revision`,
+  bumped by every rebuild and unmount) and focused node, not walked from the
+  root for every key of a burst.
+- **Typed input is drawn at once.** A key press or paste renders right away
+  instead of at the next throttled frame, so a key never waits up to
+  `1 / maxFps` seconds to show. Typing comes at the user's pace; other
+  changes keep the throttle.
 - **Tree walks** (geometry callbacks, the cursor, focus, global keys, mouse
   motion) visit nodes in place (`ViewNode.visit`) instead of concatenating
   arrays at every level.
@@ -218,6 +236,12 @@ Ink keeps every `aria-*` prop on one element.
 
 ## Gotchas
 
+- **A closure in the environment defeats skipping**: closures can't be
+  compared, so every rebuild of the modifier gives the subtree a new
+  environment, and every view below rebuilds. `onSubmit` therefore stores its
+  closure in a box the modifier's node keeps (`ActionBox`) and puts the box in
+  the environment (`SubmitAction`, equal by identity); calling it runs the
+  latest closure. `textTransform` still stores a closure.
 - An `Equatable` view whose `==` ignores something its body shows will not
   update when only that changes. Compare everything the body reads that isn't
   observed.

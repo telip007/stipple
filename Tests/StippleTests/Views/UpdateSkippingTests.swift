@@ -151,6 +151,17 @@ struct UpdateSkippingTests {
         #expect(terminal.output.contains("B"))
     }
 
+    @Test func onSubmitKeepsTheEnvironmentAcrossRebuilds() {
+        let graph = ViewGraph()
+        let counter = BodyCounter()
+        let row = Row(title: "a", counter: Counted(counter: counter))
+        let environment = EnvironmentValues()
+        // A new closure each time, as a parent's body makes one each rebuild.
+        graph.mount(row.onSubmit {}, environment: environment)
+        graph.update(row.onSubmit {}, environment: environment)
+        #expect(counter.counts["a"] == 1)
+    }
+
     @Test func aChangedEnvironmentRebuilds() {
         let graph = ViewGraph()
         let counter = BodyCounter()

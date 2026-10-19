@@ -82,3 +82,6 @@ Under `RenderOptions.mouseReporting` on the alternate screen: a left press focus
 
 ## [2026-10-19] update | Retained layout across frames
 Frames now cost what changed instead of the whole tree: sizes, wrapped text lines and `layoutChildren` are kept until a node below rebuilds, pure subtrees keep or move their placement, off-screen text isn't drawn, tree walks don't build arrays, and an `Equatable` view equal to its last value in an identical environment skips its update. Environment identity is a revision token; scroll position bindings compare by their `@State`. A scroll view's ideal height is its content's ideal height. See [view system](concepts/view-system.md#retained-layout).
+
+## [2026-10-19] update | Growing text, typing and onSubmit
+A `Text` that only grew, as a streamed reply, resumes word wrapping from a per-width `WrapCheckpoint` instead of wrapping from the start; unlimited width is laid out as the ideal size. A key press or paste renders at once instead of at the next throttled frame, and key handlers are cached per tree revision and focus. `onSubmit` keeps its closure in a node-owned box, so the environment below stays identical and unchanged views keep their subtrees. See [view system](concepts/view-system.md#retained-layout).

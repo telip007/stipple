@@ -128,17 +128,45 @@ public struct SecureField: View {
 extension View {
     /// Calls `action` when Return is pressed in a text field inside this view, as SwiftUI's `onSubmit`.
     public func onSubmit(_ action: @escaping @MainActor () -> Void) -> some View {
-        environmentChange { $0.submitAction = action }
+        modified { node, environment in
+            // The closure is new on every rebuild; the box isn't, so the
+            // environment below stays identical and unchanged views keep
+            // their subtrees.
+            let box = node.storage(at: Int.min + 2) { ActionBox() }
+            box.action = action
+            environment.submitAction = SubmitAction(box: box)
+        }
+    }
+}
+
+/// An action held by the node that set it.
+@MainActor
+final class ActionBox {
+    var action: @MainActor () -> Void = {}
+}
+
+/// The action from the nearest ``View/onSubmit(_:)``: equal to itself across
+/// rebuilds, and calling it runs the latest closure.
+struct SubmitAction: Equatable {
+    let box: ActionBox
+
+    @MainActor
+    func callAsFunction() {
+        box.action()
+    }
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.box === rhs.box
     }
 }
 
 struct SubmitActionKey: EnvironmentKey {
-    static let defaultValue: (@MainActor () -> Void)? = nil
+    static let defaultValue: SubmitAction? = nil
 }
 
 extension EnvironmentValues {
     /// The action from the nearest ``View/onSubmit(_:)``, if any.
-    var submitAction: (@MainActor () -> Void)? {
+    var submitAction: SubmitAction? {
         get { self[SubmitActionKey.self] }
         set { self[SubmitActionKey.self] = newValue }
     }

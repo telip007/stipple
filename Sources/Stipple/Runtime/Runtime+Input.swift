@@ -74,6 +74,19 @@ extension ViewGraph {
     /// handlers in tree order, then scroll views that take Page Up and Page
     /// Down while focus is elsewhere.
     func keyHandlers() -> [@MainActor (KeyPress) -> KeyPress.Result] {
+        // Handlers change only when views rebuild or focus moves; a burst of
+        // keys (fast typing, input that arrives at once) shouldn't walk the
+        // whole tree for each one.
+        let focused = focus.focusedNode.map(ObjectIdentifier.init)
+        if let cached = keyHandlerCache, cached.revision == revision, cached.focused == focused {
+            return cached.handlers
+        }
+        let handlers = collectKeyHandlers()
+        keyHandlerCache = KeyHandlerCache(revision: revision, focused: focused, handlers: handlers)
+        return handlers
+    }
+
+    private func collectKeyHandlers() -> [@MainActor (KeyPress) -> KeyPress.Result] {
         guard let root else { return [] }
         var focusedPath: [ViewNode] = []
         var current = focus.focusedNode

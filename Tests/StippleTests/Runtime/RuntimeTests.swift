@@ -35,6 +35,15 @@ struct RuntimeTests {
         #expect(terminal.output.contains("Count: 1"))
     }
 
+    @Test func aKeyPressIsDrawnWithoutWaitingForTheNextFrame() {
+        // One frame a second: a throttled frame would come a second later.
+        let (runtime, terminal) = makeRuntime(Counter()) { $0.maxFps = 1 }
+        runtime.handle(.input(Array("\u{1B}[A".utf8)))
+        #expect(terminal.output.contains("Count: 1"))
+        runtime.handle(.input(Array("\u{1B}[A".utf8)))
+        #expect(terminal.output.contains("Count: 2"))
+    }
+
     @Test func exitRestoresTerminal() async throws {
         let (runtime, terminal) = makeRuntime(Counter())
         runtime.handle(.input(Array("q".utf8)))
