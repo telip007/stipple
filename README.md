@@ -130,6 +130,7 @@ from separate packages:
 | `ProgressView(value: 0.4)` | Progress bar that fills the offered width | ink-progress-bar |
 | `SelectionList(items, selection: $selected) { … }` | Arrow-key list with scrolling and Enter to submit; click selects, double-click submits | ink-select-input |
 | `ScrollView { … }` | Vertical scrolling with a scroll indicator, `.scrollPosition($position)`, `.defaultScrollAnchor(.bottom)` for chat-style pinning, Page Up/Down and the mouse wheel | |
+| `LazyVStack { … }` | A `VStack` for long scroll content: in a bottom-pinned scroll view a resize lays out the rows in view at once and the rest over the next frames, and a view scrolled elsewhere keeps its first row in place | |
 | `Divider()` | A line across the enclosing stack | |
 
 ```swift
@@ -216,6 +217,9 @@ Stipple mirrors SwiftUI's names and layout model, with these differences:
   `scrollBy(lines:)`. A position at an edge stays there as content grows.
   Scroll views take ↑/↓, Page Up/Down and Home/End while focus is in or on
   them; `.scrollOnPageKeys()` lets Page Up/Down through from elsewhere.
+  In a `LazyVStack`, a view resting away from the edges keeps its first row
+  in place when rows above it change height (a resize), where SwiftUI keeps
+  the offset.
 - **Focus moves with Tab and Shift-Tab.** `.focusable()` views join the cycle;
   `@FocusState` reads and sets it.
 - **Inline by default.** The view renders below the shell prompt and leaves its

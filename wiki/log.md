@@ -91,3 +91,6 @@ A `Text` that only grew, as a streamed reply, resumes word wrapping from a per-w
 
 ## [2026-10-19] update | Frames that cost what is on screen
 For long scrollbacks: lazy moves, culling of off-screen rows in drawing and hit testing, behaviour summaries that let tree walks skip subtrees, text measured from word widths instead of laid-out lines, lines reused at narrower widths, a list instead of a dictionary for the size cache, and loops instead of closures on layout paths (each closure call in a main-actor type was checked for the actor). A resize now changes an observable `LiveTerminalSize` instead of the environment and goes through the frame throttle; `EnvironmentValues.terminalSize` is `@MainActor`. Release build, 1,500 transcript blocks: idle frame about 1 ms, streamed delta 3 ms, scroll 6 ms, resize 30–60 ms. See [view system](concepts/view-system.md#retained-layout).
+
+## [2026-10-19] update | LazyVStack
+`LazyVStack` lays out long scroll content near the view first: a resize of a bottom-pinned chat measures the rows from the bottom up and the rest over the next frames; a view resting elsewhere keeps its first row in place (scroll anchoring) while rows above settle. Same placement lazy or not, so scrolling between the two costs nothing extra. See [view system](concepts/view-system.md#retained-layout).

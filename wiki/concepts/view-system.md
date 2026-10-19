@@ -154,6 +154,21 @@ milliseconds with these:
   that have the kind.
 - **The size cache is a short list** compared in order, not a dictionary:
   hashing proposals cost more than the layout it saved.
+- **`LazyVStack` measures what is near the view first.** It sizes and
+  places rows the same way whether or not it is lazy, so moving between the
+  two keeps every placement. Inside a scroll view (it finds the
+  `ScrollState` through `enclosingScroll`), when rows have no size at the
+  width yet: pinned to the bottom with a bottom size anchor, it measures from
+  the bottom up; resting elsewhere, from the first row in view down, and the
+  scroll view keeps that row in place (`ScrollState.anchoredOffsets`, applied
+  only at the width the content is laid out at, not at the widths a parent
+  probes with). Rows beyond a few viewports keep the size they had at another
+  width (`ViewNode.lastKnownSize`), are left out of drawing and hit testing
+  (`isOutOfLayout`), and are measured a few milliseconds' worth per pass;
+  a pass that leaves any asks for the next with `layoutChanged()`. The
+  first row in view comes from the rows' tops relative to the stack, recorded
+  when they were placed, by halving: no frame is read. Scrolling to a view by
+  id, or by lines, measures every row.
 - **A resize changes the size, not the environment.** The runtime makes the
   root environment once and keeps the terminal size in an observable
   `LiveTerminalSize`, so only views that read `terminalSize` rebuild; the
@@ -269,6 +284,10 @@ Ink keeps every `aria-*` prop on one element.
 
 ## Gotchas
 
+- **`ViewNode.place` clears `needsPlacement` before placing the children**,
+  so a layout can ask for another pass from inside `placeChildren` (as a lazy
+  stack does); clearing it afterwards undid that, and the next frame kept
+  stand-in positions.
 - **Closures in main-actor types are checked for the actor on every call**
   when a non-isolated function calls them (`map`, `reduce`, `contains`,
   `sorted`, `allSatisfy`). On layout paths that run for every node, the

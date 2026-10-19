@@ -48,6 +48,7 @@ public struct ScrollView<Content: View>: View, PrimitiveView {
         // A position binding and page keys belong to this view, not to scroll views nested in it.
         environment.scrollPositionBinding = nil
         environment.scrollOnPageKeys = false
+        environment.enclosingScroll = EnclosingScroll(state: state)
         let style = node.environment.textStyle.resolved(background: node.environment.inheritedBackground)
         node.layout = ScrollLayout(
             state: state, indicators: node.environment.verticalScrollIndicatorVisibility, style: style)
@@ -74,6 +75,9 @@ final class ScrollState {
     var viewport = Rect(x: 0, y: 0, width: 0, height: 0)
     var showsIndicator = false
     var hasLaidOut = false
+    /// Offsets a lazy stack inside worked out to keep its first row in view
+    /// where it was, by content width; the pass at that width applies one.
+    var anchoredOffsets: [Int: Int] = [:]
     private var isObservingBinding = false
 
     /// The current position. Reading a binding also watches it, so that the
@@ -198,6 +202,13 @@ struct ScrollLayout: NodeLayout {
         let viewport = bounds.size.height
         let maxOffset = max(0, contentHeight - viewport)
         var position = state.readPosition(graph: node.graph)
+        if let anchored = state.anchoredOffsets[width], case .y = position.target, position.delta == 0 {
+            // Rows above the first one in view changed height (a resize, or
+            // rows a lazy stack measured late): keep that row in place.
+            position = .resting(at: anchored, maxOffset: maxOffset, byUser: position.isPositionedByUser)
+            state.store(position)
+        }
+        state.anchoredOffsets = [:]
 
         var offset = resolvedOffset(position, maxOffset: maxOffset, contentHeight: contentHeight)
         if case .id(let id) = position.target {
@@ -311,5 +322,26 @@ extension ViewNode {
                 x: minX, y: minY, width: max(union.maxX, frame.maxX) - minX,
                 height: max(union.maxY, frame.maxY) - minY)
         }
+    }
+}
+
+/// The scroll view around a view, for lazy stacks that measure what is near
+/// the viewport first. Equal to itself as the scroll view moves.
+struct EnclosingScroll: Equatable {
+    let state: ScrollState
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.state === rhs.state
+    }
+}
+
+struct EnclosingScrollKey: EnvironmentKey {
+    static let defaultValue: EnclosingScroll? = nil
+}
+
+extension EnvironmentValues {
+    var enclosingScroll: EnclosingScroll? {
+        get { self[EnclosingScrollKey.self] }
+        set { self[EnclosingScrollKey.self] = newValue }
     }
 }

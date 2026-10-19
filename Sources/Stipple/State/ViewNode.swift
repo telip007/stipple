@@ -56,6 +56,9 @@ final class ViewNode {
     private var placedPurely = false
     /// ``layoutChildren``, until this node or one below it rebuilds.
     private var cachedLayoutChildren: [ViewNode]?
+    /// Left out of the last layout pass by a lazy stack: its frame is stale,
+    /// so drawing and hit testing skip it.
+    var isOutOfLayout = false
     /// ``behaviorKinds``, until this node or one below it rebuilds.
     private var cachedBehaviorKinds: BehaviorKinds?
     private(set) var isMounted = true
@@ -182,6 +185,30 @@ final class ViewNode {
         return nodes
     }
 
+    /// The size cached for `proposal`, without working it out.
+    func cachedSize(for proposal: ProposedSize) -> Size? {
+        for entry in sizeCache where entry.proposal == proposal {
+            return entry.size
+        }
+        return nil
+    }
+
+    /// The size last worked out with unlimited height, at whatever width: a
+    /// stand-in for a size not worked out yet.
+    var lastKnownSize: Size? {
+        for entry in sizeCache.reversed() where entry.proposal.height == nil {
+            return entry.size
+        }
+        return nil
+    }
+
+    /// Asks for this node to be measured and placed again on the next pass,
+    /// for a layout that left work for later.
+    func layoutChanged() {
+        invalidateSizes()
+        invalidatePlacement()
+    }
+
     /// The size this node wants for `proposal`; cached until the subtree rebuilds.
     func sizeThatFits(_ proposal: ProposedSize) -> Size {
         for entry in sizeCache where entry.proposal == proposal {
@@ -217,6 +244,7 @@ extension ViewNode {
     /// A pure subtree that didn't change keeps its placement, moved to
     /// `origin` if it has to be.
     func place(at origin: Point, proposal: ProposedSize) {
+        isOutOfLayout = false
         // Placing goes top down, and a parent hands its moves down before it
         // places its children, so the moves above this node are applied.
         if !needsPlacement, placedPurely, proposal == placementProposal {
@@ -229,13 +257,15 @@ extension ViewNode {
         pushPendingMove()
         placedFrame = Rect(origin: origin, size: sizeThatFits(proposal))
         placementProposal = proposal
+        // Cleared before the children are placed, so a layout that leaves
+        // work for the next pass (a lazy stack) can ask for it again.
+        needsPlacement = false
         let children = layoutChildren
         if let layout {
             layout.placeChildren(of: self, in: placedFrame, proposal: proposal)
         } else {
             ChildGroup(nodes: children).place(at: origin, proposal: proposal)
         }
-        needsPlacement = false
         // A loop rather than `allSatisfy` and `reduce`: closures in this
         // main-actor class are checked for the actor on every call.
         var pure = layout?.placesPurely ?? true
@@ -260,6 +290,7 @@ extension ViewNode {
     /// Whether this subtree may cover cells in row `row`: `false` only for a
     /// placed subtree that lies entirely above or below it.
     func mayCover(row: Int) -> Bool {
+        if isOutOfLayout { return false }
         guard layout != nil, let placedBounds else { return true }
         return row >= placedBounds.minY && row < placedBounds.maxY
     }
@@ -286,7 +317,7 @@ extension ViewNode {
     /// layout children, which may include this node's. The walk goes to the
     /// root: transparent nodes are never placed themselves, so their mark
     /// stays set and can't end it.
-    private func invalidatePlacement() {
+    fileprivate func invalidatePlacement() {
         var node: ViewNode? = self
         while let current = node {
             current.needsPlacement = true
@@ -304,6 +335,9 @@ extension ViewNode {
         // wider than its frame, so nothing is skipped sideways.
         // Drawing goes top down and hands moves down as it goes, so the
         // moves above this node are already applied.
+        if isOutOfLayout {
+            return
+        }
         if layout != nil, let placedBounds, placedBounds.maxY <= clip.minY || placedBounds.minY >= clip.maxY {
             return
         }
