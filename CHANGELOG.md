@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.3](https://github.com/telip007/stipple/compare/0.3.2...0.3.3) (2026-10-19)
+
+
+### Performance
+
+* resume wrapping growing text and draw typed keys at once ([978bcf3](https://github.com/telip007/stipple/commit/978bcf3d35a832ba921b5ea7d7c7e746646f5c17))
+
+
+### Documentation
+
+* **wiki:** stop the clock in tests of close events ([e7812d6](https://github.com/telip007/stipple/commit/e7812d60cbb800c32a3eb73c72ae2cf23aa61421))
+
 ## [0.3.2](https://github.com/telip007/stipple/compare/0.3.1...0.3.2) (2026-10-18)
 
 
