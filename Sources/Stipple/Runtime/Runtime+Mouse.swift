@@ -58,7 +58,10 @@ extension Runtime {
         if writer.alternateScreen {
             candidates = ViewGraph.nodes(at: location, in: root).filter { $0.behaviors.scroll != nil }
         } else {
-            let all = ViewGraph.allNodes(in: root).filter { $0.behaviors.scroll != nil }
+            var all: [ViewNode] = []
+            root.visit(having: .scroll) { node in
+                if node.behaviors.scroll != nil { all.append(node) }
+            }
             let focused: [ViewNode] = all.filter(graph.isScrollFocused).reversed()
             let innermostFirst: [ViewNode] = all.reversed()
             candidates = focused + innermostFirst
@@ -113,7 +116,7 @@ extension Runtime {
     /// Turns motion reporting on while some view has an `onHover` handler.
     func syncMouseMotion() {
         guard options.mouseReporting, let root = graph.root else { return }
-        terminal.setMouseMotionReporting(root.containsNode { !$0.behaviors.hoverHandlers.isEmpty })
+        terminal.setMouseMotionReporting(root.behaviorKinds.contains(.hover))
     }
 
     private func finishClick(at location: Point) {
@@ -149,6 +152,8 @@ extension ViewGraph {
     }
 
     private static func collectHits(at point: Point, in node: ViewNode, clip: Rect, into hits: inout [ViewNode]) {
+        guard node.mayCover(row: point.y) else { return }
+        node.pushPendingMove()
         var childClip = clip
         if let layout = node.layout {
             if node.frame.intersection(clip).contains(point) { hits.append(node) }

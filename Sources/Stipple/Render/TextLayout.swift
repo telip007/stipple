@@ -291,3 +291,142 @@ extension TextLayout {
         return added.isEmpty ? [StyledRun(text: "", style: grown.style)] : added
     }
 }
+
+/// What word wrapping looks at in a text: each word's width and whether a
+/// space comes before it, worked out once so the text can be measured at any
+/// width without laying out its lines. Measuring a long scrollback at a new
+/// width (a resize) then costs a pass over word widths per text, and only the
+/// text on screen is laid out.
+struct WrapMetrics {
+    fileprivate struct Word {
+        var hasSpace: Bool
+        /// The width wrapping counts.
+        var width: Int
+        /// The width the laid-out row shows (`TextMetrics` of its text).
+        var shownWidth: Int
+        /// Where its graphemes' widths are in ``Line/graphemeWidths``, for
+        /// breaking a word wider than a line.
+        var graphemes: Range<Int>
+    }
+
+    fileprivate struct Line {
+        var words: [Word]
+        var graphemeWidths: [Int]
+        var shownWidths: [Int]
+    }
+
+    private let lines: [Line]
+
+    init(_ runs: [StyledRun]) {
+        lines = TextLayout.lines(runs).map { line in
+            var words: [Word] = []
+            var widths: [Int] = []
+            var shown: [Int] = []
+            var current = Word(hasSpace: false, width: 0, shownWidth: 0, graphemes: 0..<0)
+            for grapheme in StyledGrapheme.graphemes(of: line) {
+                if grapheme.character == " " {
+                    words.append(current)
+                    current = Word(hasSpace: true, width: 0, shownWidth: 0, graphemes: widths.count..<widths.count)
+                    continue
+                }
+                widths.append(grapheme.width)
+                shown.append(TextMetrics.width(of: grapheme.character))
+                current.width += grapheme.width
+                current.shownWidth += shown[shown.count - 1]
+                current.graphemes = current.graphemes.lowerBound..<widths.count
+            }
+            words.append(current)
+            return Line(words: words, graphemeWidths: widths, shownWidths: shown)
+        }
+    }
+
+    /// The size ``TextLayout/wrap(_:width:)`` lays the text out in at
+    /// `width` (at least 1): the widest row and the number of rows.
+    func size(width: Int) -> Size {
+        var measurer = RowMeasurer(width: width)
+        for line in lines {
+            measurer.startLine()
+            for word in line.words {
+                measurer.add(word, in: line)
+            }
+        }
+        measurer.finish()
+        return Size(width: measurer.widest, height: measurer.rows)
+    }
+}
+
+/// ``TextLayout``'s line wrapper, counting rows and their widths instead of
+/// filling them; it must decide every break the same way.
+private struct RowMeasurer {
+    let width: Int
+    var rows = 0
+    var widest = 0
+    /// The open row's width as wrapping counts it, and as it is shown.
+    var rowWidth = 0
+    var rowShown = 0
+
+    init(width: Int) {
+        self.width = width
+    }
+
+    mutating func startLine() {
+        if rows > 0 { closeRow() }
+        rows += 1
+    }
+
+    mutating func finish() {
+        widest = max(widest, rowShown)
+    }
+
+    private mutating func closeRow() {
+        widest = max(widest, rowShown)
+        rowWidth = 0
+        rowShown = 0
+    }
+
+    private mutating func newRow() {
+        closeRow()
+        rows += 1
+    }
+
+    mutating func add(_ word: WrapMetrics.Word, in line: WrapMetrics.Line) {
+        if word.hasSpace {
+            if rowWidth >= width { newRow() }
+            rowWidth += 1
+            rowShown += 1
+        }
+        if word.width > width {
+            let remaining = width - rowWidth
+            let breaksThisLine = 1 + (word.width - remaining - 1) / width
+            let breaksNextLine = (word.width - 1) / width
+            if breaksNextLine < breaksThisLine { newRow() }
+            breakWord(word, in: line)
+            return
+        }
+        if rowWidth + word.width > width && rowWidth > 0 && word.width > 0 { newRow() }
+        rowWidth += word.width
+        rowShown += word.shownWidth
+    }
+
+    /// As `TextLayout.breakWord`: fills rows a grapheme at a time.
+    private mutating func breakWord(_ word: WrapMetrics.Word, in line: WrapMetrics.Line) {
+        var visible = rowWidth
+        for index in word.graphemes {
+            let graphemeWidth = line.graphemeWidths[index]
+            if visible + graphemeWidth <= width || rowWidth == 0 {
+                rowWidth += graphemeWidth
+                rowShown += line.shownWidths[index]
+            } else {
+                newRow()
+                rowWidth = graphemeWidth
+                rowShown = line.shownWidths[index]
+                visible = 0
+            }
+            visible += graphemeWidth
+            if visible >= width && index < word.graphemes.upperBound - 1 {
+                newRow()
+                visible = 0
+            }
+        }
+    }
+}

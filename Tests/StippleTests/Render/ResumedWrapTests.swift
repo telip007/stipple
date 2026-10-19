@@ -16,6 +16,7 @@ struct ResumedWrapTests {
 
     private static let pieces = [
         "a", "word", " ", "  ", "longerword", "averyveryverylongwordthatbreaks", "\n", "\n\n", "é", "日本", "x y", "\t",
+        "e\u{301}", "\u{200B}", "👍🏽", "  ", "a\u{301}bc",
     ]
     private static let styles = [Style.plain, Style(foreground: .red)]
 
@@ -56,5 +57,45 @@ struct ResumedWrapTests {
         graph.update(Text("alpha beta gamma"), environment: EnvironmentValues())
         let frame = FrameRenderer(graph: graph).render(width: 8, height: nil).frame
         #expect(frame.replacing(/\u{1B}\[[0-9;]*m/, with: "").contains("gamma"))
+    }
+
+    /// Measuring from word widths gives the size of the laid-out lines.
+    @Test(arguments: 1...16)
+    func metricsMatchTheLaidOutLines(seed: Int) {
+        var random = Generator(state: UInt64(seed) &* 7_919)
+        var runs: [StyledRun] = []
+        for _ in 0..<(1 + random.next(40)) {
+            let text = Self.pieces[random.next(Self.pieces.count)]
+            runs.append(StyledRun(text: text, style: Self.styles[random.next(Self.styles.count)]))
+        }
+        let metrics = WrapMetrics(runs)
+        for width in 1...30 {
+            let lines = TextLayout.wrap(runs, width: width)
+            let widest = lines.map { line in line.reduce(0) { $0 + TextMetrics.width(of: $1.text) } }.max() ?? 0
+            #expect(
+                metrics.size(width: width) == Size(width: widest, height: lines.count), "seed \(seed), width \(width)")
+        }
+    }
+
+    /// A text laid out at one width and then at others, as stacks and
+    /// resizes ask, gives the lines a fresh layout gives at each width.
+    @Test(arguments: 1...12)
+    func reusedAndMeasuredLinesMatchAFreshLayout(seed: Int) {
+        var random = Generator(state: UInt64(seed) &* 104_729)
+        var runs: [StyledRun] = []
+        for _ in 0..<(1 + random.next(30)) {
+            runs.append(StyledRun(text: Self.pieces[random.next(Self.pieces.count)], style: .plain))
+        }
+        let environment = EnvironmentValues()
+        let graph = ViewGraph()
+        let node = ViewNode(graph: graph, parent: nil, view: EmptyView(), environment: environment)
+        let kept = TextNodeLayout(runs: runs, environment: environment, memory: TextMemory())
+        for _ in 0..<12 {
+            let width = 1 + random.next(30)
+            let proposal = ProposedSize(width: width, height: nil)
+            let fresh = TextNodeLayout(runs: runs, environment: environment)
+            #expect(kept.sizeThatFits(proposal, node: node) == fresh.sizeThatFits(proposal, node: node), "seed \(seed)")
+            #expect(kept.lines(width: width) == fresh.lines(width: width), "seed \(seed), width \(width)")
+        }
     }
 }

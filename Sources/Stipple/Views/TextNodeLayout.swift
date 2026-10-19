@@ -17,12 +17,21 @@ struct TextNodeLayout: NodeLayout {
     /// stays this large after insets and borders are taken off it.
     static let unlimitedWidth = Int.infinity / 2
 
-    /// Where wrapping stopped last time, by width, kept by the node across
-    /// rebuilds; `nil` wraps from the start every time.
-    private let checkpoints: WrapCheckpoints?
+    /// Whether any run has text. A loop: a closure in this main-actor type
+    /// is checked for the actor on every call.
+    private var hasText: Bool {
+        for run in runs where !run.text.isEmpty {
+            return true
+        }
+        return false
+    }
 
-    init(runs: [StyledRun], environment: EnvironmentValues, checkpoints: WrapCheckpoints? = nil) {
-        self.checkpoints = checkpoints
+    /// What the node keeps across rebuilds; `nil` lays out from the start
+    /// every time.
+    private let memory: TextMemory?
+
+    init(runs: [StyledRun], environment: EnvironmentValues, memory: TextMemory? = nil) {
+        self.memory = memory
         transform = environment.isScreenReaderEnabled ? nil : environment.textTransform
         wrapping = environment.textWrapping
         self.runs = runs
@@ -34,9 +43,36 @@ struct TextNodeLayout: NodeLayout {
     func lines(width: Int?) -> [[StyledRun]] {
         let width = effectiveWidth(width)
         if let cached = cache.lines[width] { return cached }
+        if let width, let fitting = linesFitting(in: width) {
+            cache.lines[width] = fitting
+            return fitting
+        }
         let lines = layOut(width: width)
         cache.lines[width] = lines
         return lines
+    }
+
+    /// The wrap metrics, when measuring with them beats laying out lines:
+    /// word-wrapped text without a line limit, whose lines at `width` aren't
+    /// known yet and can't be continued from a checkpoint.
+    private func metricsForMeasuring(at width: Int) -> WrapMetrics? {
+        guard let memory, wrapping == .words, lineLimit == nil, width > 0, cache.lines[width] == nil,
+            memory.checkpoints[width] == nil, linesFitting(in: width) == nil
+        else { return nil }
+        return memory.metrics(of: runs)
+    }
+
+    /// Lines already laid out for more room that fit in `width` as they are.
+    /// Greedy wrapping gives the same lines then: whatever fit still fits,
+    /// and a word that didn't fit still doesn't. Stacks place children at
+    /// the stack's own width, its widest child's, so this happens to every
+    /// text in a stack whenever its widest child grows, as a streamed line does.
+    private func linesFitting(in width: Int) -> [[StyledRun]]? {
+        guard lineLimit == nil, wrapping != .truncate else { return nil }
+        for (key, size) in cache.sizes where size.width <= width && (key ?? .max) > width {
+            if let lines = cache.lines[key] { return lines }
+        }
+        return nil
     }
 
     /// `width`, or `nil` for unlimited room without a line limit: such text
@@ -57,10 +93,10 @@ struct TextNodeLayout: NodeLayout {
         let wrapped: [[StyledRun]]
         switch wrapping {
         case .words:
-            if let checkpoints {
+            if let memory {
                 // Text that only grew, as a reply being streamed, wraps from where it stopped.
-                let result = TextLayout.wrap(runs, width: width, resuming: checkpoints.byWidth[width])
-                checkpoints.byWidth[width] = result.checkpoint
+                let result = TextLayout.wrap(runs, width: width, resuming: memory.checkpoints[width])
+                memory.checkpoints[width] = result.checkpoint
                 wrapped = result.lines
             } else {
                 wrapped = TextLayout.lines(runs).flatMap { TextLayout.wrap($0, width: width) }
@@ -85,12 +121,18 @@ struct TextNodeLayout: NodeLayout {
     }
 
     func sizeThatFits(_ proposal: ProposedSize, node: ViewNode) -> Size {
-        guard runs.contains(where: { !$0.text.isEmpty }) else { return .zero }
+        guard hasText else { return .zero }
         let key = effectiveWidth(proposal.width)
         if let cached = cache.sizes[key] { return cached }
-        let lines = lines(width: key)
-        let width = lines.map { line in line.reduce(0) { $0 + TextMetrics.width(of: $1.text) } }.max() ?? 0
-        let size = Size(width: width, height: lines.count)
+        let size: Size
+        if let width = key, let metrics = metricsForMeasuring(at: width) {
+            // Measured without laying out lines, which only text on screen needs.
+            size = metrics.size(width: width)
+        } else {
+            let lines = lines(width: key)
+            let width = lines.map { line in line.reduce(0) { $0 + TextMetrics.width(of: $1.text) } }.max() ?? 0
+            size = Size(width: width, height: lines.count)
+        }
         cache.sizes[key] = size
         return size
     }
@@ -112,10 +154,20 @@ struct TextNodeLayout: NodeLayout {
     }
 }
 
-/// Where a text node's wrapping stopped, by width, kept across rebuilds.
+/// What a text node keeps across rebuilds: where wrapping stopped, by
+/// width, and the text's wrap metrics while the text stays the same.
 @MainActor
-final class WrapCheckpoints {
-    var byWidth: [Int: WrapCheckpoint] = [:]
+final class TextMemory {
+    var checkpoints: [Int: WrapCheckpoint] = [:]
+    private var metrics: (runs: [StyledRun], value: WrapMetrics)?
+
+    /// The wrap metrics of `runs`, worked out again only when they change.
+    func metrics(of runs: [StyledRun]) -> WrapMetrics {
+        if let metrics, metrics.runs == runs { return metrics.value }
+        let value = WrapMetrics(runs)
+        metrics = (runs, value)
+        return value
+    }
 }
 
 /// The lines and sizes one ``TextNodeLayout`` worked out, by width.

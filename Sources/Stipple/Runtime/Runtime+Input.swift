@@ -98,7 +98,10 @@ extension ViewGraph {
         let global = Self.globalNodes(in: root, insideFocusable: false).filter { node in
             !focusedPath.contains { $0 === node }
         }
-        let scrollViews = Self.allNodes(in: root).filter { $0.behaviors.scroll != nil }
+        var scrollViews: [ViewNode] = []
+        root.visit(having: .scroll) { node in
+            if node.behaviors.scroll != nil { scrollViews.append(node) }
+        }
         let focused = scrollViews.filter(isScrollFocused).reversed().compactMap(\.behaviors.scroll)
         let unfocused = scrollViews.filter { !isScrollFocused($0) }.compactMap(\.behaviors.scroll)
             .filter(\.scrollsOnPageKeys)
@@ -127,15 +130,18 @@ extension ViewGraph {
     /// Paste handlers that may see a paste: focused path plus global ones.
     func pasteHandlers() -> [@MainActor (String) -> Void] {
         guard let root else { return [] }
-        return Self.allNodes(in: root).filter { node in
-            !node.behaviors.pasteHandlers.isEmpty && (focus.containsFocus(node) || !node.isInsideFocusable)
+        var handlers: [@MainActor (String) -> Void] = []
+        root.visit(having: .paste) { node in
+            if !node.behaviors.pasteHandlers.isEmpty, focus.containsFocus(node) || !node.isInsideFocusable {
+                handlers += node.behaviors.pasteHandlers
+            }
         }
-        .flatMap(\.behaviors.pasteHandlers)
+        return handlers
     }
 
     /// Calls geometry-change callbacks with each node's latest frame.
     func runGeometryCallbacks() {
-        root?.visit { node in
+        root?.visit(having: .geometry) { node in
             for callback in node.behaviors.geometryChange {
                 callback(node.frame)
             }
@@ -145,7 +151,7 @@ extension ViewGraph {
     /// Where the terminal cursor should rest: the last `.cursorPosition(_:)` in tree order.
     var cursorPosition: CursorPosition? {
         var last: ViewNode?
-        root?.visit { node in
+        root?.visit(having: .cursor) { node in
             if node.behaviors.cursorPosition != nil { last = node }
         }
         guard let node = last, let point = node.behaviors.cursorPosition else { return nil }
@@ -159,6 +165,7 @@ extension ViewGraph {
     }
 
     private static func collectGlobalNodes(in node: ViewNode, insideFocusable: Bool, into nodes: inout [ViewNode]) {
+        guard node.behaviorKinds.contains(.keys) else { return }
         let inside = insideFocusable || node.behaviors.focus != nil
         if !inside, !node.behaviors.keyHandlers.isEmpty {
             nodes.append(node)

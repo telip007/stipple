@@ -120,6 +120,17 @@ milliseconds with these:
   wrapping resumes before that word (0.07 ms instead of 5 ms for a 4,000
   character paragraph in a debug build). Anything else, including appended
   tabs or a character that joins the previous one, wraps from the start.
+- **Narrower widths reuse wider lines.** A stack places its children at its
+  own width, its widest child's, which can be less than it was offered.
+  Lines laid out for more room that fit the narrower width are kept: greedy
+  wrapping would give the same lines (whatever fit still fits, and a word
+  that didn't fit still doesn't).
+- **Text is measured without its lines.** `WrapMetrics` (each word's width,
+  whether a space comes before it, and grapheme widths for breaking long
+  words) is kept in the node while the text is unchanged. Sizes at a new
+  width come from a pass over word widths that makes every break decision the
+  line wrapper makes, and only text that is drawn gets lines. A resize of a
+  long scrollback costs that pass per text.
 - **Unlimited width is the ideal size.** Text offered `Int.infinity` (less
   insets) without a line limit is laid out as for its ideal size, instead of
   as one ever longer row.
@@ -127,6 +138,28 @@ milliseconds with these:
 - **Key handlers** are collected once per tree revision (`ViewGraph.revision`,
   bumped by every rebuild and unmount) and focused node, not walked from the
   root for every key of a burst.
+- **Moves are lazy.** Moving a placed subtree (content shifting as a
+  bottom-anchored scroll view grows, or scrolling) moves the node itself and
+  records the shift for its children, who apply it when their `frame` is
+  read. Placing and drawing go top down and hand moves down as they go.
+- **Off-screen rows aren't drawn or hit-tested.** A placed node keeps the
+  bounds of its placed subtree (`placedBounds`); drawing and hit testing skip
+  a subtree whose bounds miss the rows in question. Only rows: text may be
+  wider than its frame, so nothing is skipped sideways.
+- **Walks skip what they can't find.** Each node keeps a summary of the
+  behaviour kinds below it (`BehaviorKinds`: focus, keys, paste, geometry,
+  hover, scroll, cursor), computed on demand and cleared on the walk to the
+  root that a rebuild already does. Geometry callbacks, focus, the cursor,
+  key and paste handlers, scroll views and mouse motion visit only subtrees
+  that have the kind.
+- **The size cache is a short list** compared in order, not a dictionary:
+  hashing proposals cost more than the layout it saved.
+- **A resize changes the size, not the environment.** The runtime makes the
+  root environment once and keeps the terminal size in an observable
+  `LiveTerminalSize`, so only views that read `terminalSize` rebuild; the
+  rest keep their nodes and lay out at the new width. Resizes go through the
+  frame throttle, so dragging a window edge draws the latest size, not every
+  one in turn.
 - **Typed input is drawn at once.** A key press or paste renders right away
   instead of at the next throttled frame, so a key never waits up to
   `1 / maxFps` seconds to show. Typing comes at the user's pace; other
@@ -236,6 +269,11 @@ Ink keeps every `aria-*` prop on one element.
 
 ## Gotchas
 
+- **Closures in main-actor types are checked for the actor on every call**
+  when a non-isolated function calls them (`map`, `reduce`, `contains`,
+  `sorted`, `allSatisfy`). On layout paths that run for every node, the
+  check cost more than the layout: write loops there, or put the closure in a
+  `nonisolated` helper (`StackLayout.sorted(_:by:)`).
 - **A closure in the environment defeats skipping**: closures can't be
   compared, so every rebuild of the modifier gives the subtree a new
   environment, and every view below rebuilds. `onSubmit` therefore stores its

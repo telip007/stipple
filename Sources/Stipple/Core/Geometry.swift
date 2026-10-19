@@ -75,3 +75,17 @@ public struct Rect: Hashable, Sendable {
         return Self(x: left, y: top, width: max(0, right - left), height: max(0, bottom - top))
     }
 }
+
+extension Rect {
+    /// The smallest rectangle covering both.
+    func union(_ other: Self) -> Self {
+        let left = min(minX, other.minX)
+        let top = min(minY, other.minY)
+        return Self(x: left, y: top, width: max(maxX, other.maxX) - left, height: max(maxY, other.maxY) - top)
+    }
+
+    /// The rectangle moved by `delta`.
+    func offsetBy(_ delta: Point) -> Self {
+        Self(origin: Point(x: minX + delta.x, y: minY + delta.y), size: size)
+    }
+}

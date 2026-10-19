@@ -47,9 +47,8 @@ public struct Text: View, PrimitiveView, Equatable {
     }
 
     func update(_ node: ViewNode) -> [ChildView] {
-        let checkpoints = node.storage(at: 0) { WrapCheckpoints() }
-        node.layout = TextNodeLayout(
-            runs: runs(in: node.environment), environment: node.environment, checkpoints: checkpoints)
+        let memory = node.storage(at: 0) { TextMemory() }
+        node.layout = TextNodeLayout(runs: runs(in: node.environment), environment: node.environment, memory: memory)
         return []
     }
 

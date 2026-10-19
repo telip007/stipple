@@ -162,6 +162,28 @@ struct UpdateSkippingTests {
         #expect(counter.counts["a"] == 1)
     }
 
+    @Test func aResizeRebuildsOnlyTheViewsThatReadTheSize() async {
+        struct Sized: View {
+            @Environment(\.terminalSize) private var size
+            let counter: Counted
+            var body: some View {
+                counter.counter.hit("sized")
+                return VStack {
+                    Text("w\(size.width)")
+                    Row(title: "row", counter: counter)
+                }
+            }
+        }
+        let counter = BodyCounter()
+        let (runtime, terminal) = makeRuntime(Sized(counter: Counted(counter: counter)))
+        terminal.size = Size(width: 30, height: 5)
+        runtime.handle(.resize(terminal.size))
+        await runtime.settle()
+        #expect(terminal.output.contains("w30"))
+        // The view that reads the size rebuilt; the equal row inside didn't.
+        #expect(counter.counts == ["sized": 2, "row": 1])
+    }
+
     @Test func aChangedEnvironmentRebuilds() {
         let graph = ViewGraph()
         let counter = BodyCounter()

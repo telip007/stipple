@@ -61,7 +61,7 @@ final class Runtime {
             if options.mouseReporting { terminal.setMouseReporting(true) }
             configureKeyboard()
         }
-        graph.mount(AnyView(rootView), environment: makeEnvironment())
+        graph.mount(AnyView(rootView), environment: rootEnvironment)
         render()
         if interactive {
             listen()
@@ -76,6 +76,11 @@ final class Runtime {
         }
     }
 
+    /// The size views see; a resize changes it rather than the environment.
+    private(set) lazy var liveTerminalSize = LiveTerminalSize(terminal.size)
+    /// The environment the root gets, made once so that it stays identical.
+    private lazy var rootEnvironment = makeEnvironment()
+
     func makeEnvironment() -> EnvironmentValues {
         var environment = EnvironmentValues()
         environment.exit = ExitAction { [weak self] error in self?.exit(with: error) }
@@ -84,7 +89,7 @@ final class Runtime {
             writeOutput: { [weak self] in self?.writer.writeAbove($0) },
             writeError: { [weak self] text in self?.writeErrorAbove(text) },
         )
-        environment.terminalSize = terminal.size
+        environment.follow(liveTerminalSize)
         environment.suspendTerminal = SuspendTerminalAction { [weak self] body in
             try await self?.suspendTerminal(body)
         }
@@ -115,7 +120,7 @@ final class Runtime {
     /// Replaces the root view, keeping state when its type is unchanged.
     func replaceRoot(_ view: some View) {
         rootView = view
-        graph.update(AnyView(view), environment: makeEnvironment())
+        graph.update(AnyView(view), environment: rootEnvironment)
         render()
     }
 
@@ -146,8 +151,12 @@ final class Runtime {
             }
         case .resize:
             writer.resized()
-            graph.update(AnyView(rootView), environment: makeEnvironment())
-            render()
+            // Only the views that read the size rebuild; the rest keep their
+            // nodes and lay out again at the new width. Dragging a window
+            // edge sends a burst of resizes: the throttle draws the latest
+            // size instead of every one of them in turn.
+            liveTerminalSize.size = terminal.size
+            scheduleRender()
         }
     }
 

@@ -18,7 +18,7 @@ struct RenderHandleTests {
         #expect(terminal.restored)
     }
 
-    @Test func resizeRerendersWithNewSize() {
+    @Test func resizeRerendersWithNewSize() async {
         struct SizeView: View {
             @Environment(\.terminalSize) private var size
             var body: some View { Text("w\(size.width)") }
@@ -26,6 +26,8 @@ struct RenderHandleTests {
         let (runtime, terminal) = makeRuntime(SizeView())
         terminal.size = Size(width: 30, height: 5)
         runtime.handle(.resize(terminal.size))
+        // Resizes go through the frame throttle, so a burst draws once.
+        await runtime.settle()
         #expect(terminal.output.contains("w30"))
     }
 

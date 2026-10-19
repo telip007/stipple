@@ -1,3 +1,5 @@
+import Observation
+
 /// Ends the app: `exit()` finishes `Stipple.run` normally, `exit(throwing:)`
 /// makes it throw (Ink's `useApp().exit`).
 public struct ExitAction: Sendable {
@@ -103,6 +105,33 @@ struct TerminalSizeKey: EnvironmentKey {
     static let defaultValue = Size(width: 80, height: 24)
 }
 
+/// The terminal's size as the runtime tracks it: observable, so reading it in
+/// a body updates that view on resize.
+@MainActor
+@Observable
+final class LiveTerminalSize {
+    var size: Size
+
+    init(_ size: Size) {
+        self.size = size
+    }
+}
+
+/// A ``LiveTerminalSize`` in the environment, equal to itself as its size changes.
+struct LiveTerminalSizeReference: Equatable {
+    let box: LiveTerminalSize
+
+    @MainActor var size: Size { box.size }
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.box === rhs.box
+    }
+}
+
+struct LiveTerminalSizeKey: EnvironmentKey {
+    static let defaultValue: LiveTerminalSizeReference? = nil
+}
+
 struct ScreenReaderKey: EnvironmentKey {
     static let defaultValue = false
 }
@@ -134,9 +163,21 @@ extension EnvironmentValues {
     }
 
     /// The terminal's size in cells; views reading it update on resize (Ink's `useWindowSize`).
-    public var terminalSize: Size {
-        get { self[TerminalSizeKey.self] }
-        set { self[TerminalSizeKey.self] = newValue }
+    ///
+    /// The runtime keeps the size in an observable box, so a resize updates
+    /// the views that read it and leaves the environment, and every other
+    /// view, unchanged. Setting it fixes the size for the views inside.
+    @MainActor public var terminalSize: Size {
+        get { self[LiveTerminalSizeKey.self]?.size ?? self[TerminalSizeKey.self] }
+        set {
+            self[TerminalSizeKey.self] = newValue
+            self[LiveTerminalSizeKey.self] = nil
+        }
+    }
+
+    /// Makes `terminalSize` follow `size`.
+    mutating func follow(_ size: LiveTerminalSize) {
+        self[LiveTerminalSizeKey.self] = LiveTerminalSizeReference(box: size)
     }
 
     /// Whether screen reader output is on (`STIPPLE_SCREEN_READER=true` or `RenderOptions`).

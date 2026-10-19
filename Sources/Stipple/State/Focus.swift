@@ -81,7 +81,7 @@ final class FocusController {
 
     private static func collectFocusables(_ root: ViewNode) -> [ViewNode] {
         var nodes: [ViewNode] = []
-        root.visit { node in
+        root.visit(having: .focus) { node in
             if node.behaviors.focus != nil {
                 nodes.append(node)
             }

@@ -23,9 +23,15 @@ struct StackLayout: NodeLayout {
     }
 
     func size(of children: [ViewNode], proposal: ProposedSize) -> Size {
-        let sizes = distribute(children, proposal: proposal)
-        let main = sizes.reduce(0) { $0 + $1.dimension(axis) } + totalSpacing(children.count)
-        let crossLength = sizes.map { $0.dimension(cross) }.max() ?? 0
+        // Loops rather than `map` and `reduce` here and below: closures in
+        // this main-actor type are checked for the actor on every call, which
+        // costs more than the layout itself on a long stack.
+        var main = totalSpacing(children.count)
+        var crossLength = 0
+        for size in distribute(children, proposal: proposal) {
+            main += size.dimension(axis)
+            crossLength = max(crossLength, size.dimension(cross))
+        }
         return .along(axis, main, cross: crossLength)
     }
 
@@ -62,19 +68,27 @@ struct StackLayout: NodeLayout {
     private func distribute(_ children: [ViewNode], proposal: ProposedSize) -> [Size] {
         let crossProposal = proposal.dimension(cross)
         guard let available = proposal.dimension(axis) else {
-            // Ideal size: every child at its ideal size.
-            return children.map { $0.sizeThatFits(.along(axis, nil, cross: crossProposal)) }
+            return idealSizes(of: children, cross: crossProposal)
         }
-        let lengths = children.map { measure($0, cross: crossProposal) }
+        let lengths = lengths(of: children, cross: crossProposal)
+        var lowerMinimum = 0
+        var flexibilities: [Int] = []
+        flexibilities.reserveCapacity(lengths.count)
+        for length in lengths {
+            lowerMinimum += length.minimum
+            flexibilities.append(length.flexibility)
+        }
         var remaining = available - totalSpacing(children.count)
         var sizes = [Size](repeating: .zero, count: children.count)
-        let groups = Dictionary(grouping: children.indices) { children[$0].layoutPriority }
-        var lowerMinimum = lengths.reduce(0) { $0 + $1.minimum }
-        for priority in groups.keys.sorted(by: >) {
-            let members = groups[priority, default: []].sorted { lengths[$0].flexibility < lengths[$1].flexibility }
-            lowerMinimum -= members.reduce(0) { $0 + lengths[$1].minimum }
+        for group in Self.priorityGroups(children) {
+            let members = Self.sorted(group, by: flexibilities)
+            var groupMinimum = 0
+            for index in members {
+                groupMinimum += lengths[index].minimum
+            }
+            lowerMinimum -= groupMinimum
             var groupRemaining = max(0, remaining - lowerMinimum)
-            var unprocessedMinimum = members.reduce(0) { $0 + lengths[$1].minimum }
+            var unprocessedMinimum = groupMinimum
             for (position, index) in members.enumerated() {
                 unprocessedMinimum -= lengths[index].minimum
                 // An equal share, or the child's ideal length if that still
@@ -90,6 +104,48 @@ struct StackLayout: NodeLayout {
             }
         }
         return sizes
+    }
+
+    /// Every child at its ideal size along the axis.
+    private func idealSizes(of children: [ViewNode], cross crossProposal: Int?) -> [Size] {
+        var sizes: [Size] = []
+        sizes.reserveCapacity(children.count)
+        for child in children {
+            sizes.append(child.sizeThatFits(.along(axis, nil, cross: crossProposal)))
+        }
+        return sizes
+    }
+
+    private func lengths(of children: [ViewNode], cross crossProposal: Int?) -> [Lengths] {
+        var lengths: [Lengths] = []
+        lengths.reserveCapacity(children.count)
+        for child in children {
+            lengths.append(measure(child, cross: crossProposal))
+        }
+        return lengths
+    }
+
+    /// The children's indices by layout priority, highest first. Nearly
+    /// always every child has the same priority, which needs no grouping.
+    private static func priorityGroups(_ children: [ViewNode]) -> [[Int]] {
+        var isMixed = false
+        if let first = children.first?.layoutPriority {
+            for child in children where child.layoutPriority != first {
+                isMixed = true
+                break
+            }
+        }
+        guard isMixed else { return [Array(children.indices)] }
+        let groups = Dictionary(grouping: children.indices) { children[$0].layoutPriority }
+        return groups.keys.sorted(by: >).map { groups[$0, default: []] }
+    }
+
+    /// `indices` ordered by their `keys`, least first, keeping ties in order.
+    nonisolated private static func sorted(_ indices: [Int], by keys: [Int]) -> [Int] {
+        indices.enumerated().sorted { lhs, rhs in
+            keys[lhs.element] != keys[rhs.element] ? keys[lhs.element] < keys[rhs.element] : lhs.offset < rhs.offset
+        }
+        .map(\.element)
     }
 
     private struct Lengths {
@@ -119,8 +175,12 @@ struct OverlayLayout: NodeLayout {
     let alignment: Alignment
 
     func sizeThatFits(_ proposal: ProposedSize, node: ViewNode) -> Size {
-        let sizes = node.layoutChildren.map { $0.sizeThatFits(proposal) }
-        return Size(width: sizes.map(\.width).max() ?? 0, height: sizes.map(\.height).max() ?? 0)
+        var result = Size(width: 0, height: 0)
+        for child in node.layoutChildren {
+            let size = child.sizeThatFits(proposal)
+            result = Size(width: max(result.width, size.width), height: max(result.height, size.height))
+        }
+        return result
     }
 
     func placeChildren(of node: ViewNode, in bounds: Rect, proposal: ProposedSize) {

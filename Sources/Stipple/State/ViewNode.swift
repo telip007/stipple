@@ -19,7 +19,11 @@ final class ViewNode {
     /// Sizes by proposal, kept across frames until the node or a node below
     /// it rebuilds: layouts are values set on rebuild, so a size can only
     /// change when the subtree does.
-    private var sizeCache: [ProposedSize: Size] = [:]
+    /// A short list searched in order: a node sees only a few proposals,
+    /// and comparing them beats hashing them.
+    private var sizeCache: [(proposal: ProposedSize, size: Size)] = []
+    /// Proposals a node keeps sizes for; past this the oldest is dropped.
+    private static let sizeCacheLimit = 8
 
     /// How this node lays out and draws; `nil` for transparent nodes.
     var layout: (any NodeLayout)?
@@ -30,7 +34,19 @@ final class ViewNode {
     /// Key, paste and lifecycle behaviour attached by modifiers.
     var behaviors = NodeBehaviors()
     /// Where the node was placed in the last layout pass.
-    private(set) var frame = Rect(x: 0, y: 0, width: 0, height: 0)
+    var frame: Rect {
+        applyPendingMoves()
+        return placedFrame
+    }
+    /// ``frame`` as last set, without moves still pending above.
+    private var placedFrame = Rect(x: 0, y: 0, width: 0, height: 0)
+    /// A move of this node not yet applied to its children: moving a subtree
+    /// is free, and only the nodes that are read again (drawn, hit, measured
+    /// for a callback) pay for it.
+    private var pendingMove = Point.zero
+    /// What this subtree's placed nodes cover, to skip drawing it when it is
+    /// out of view; `nil` until it has been placed.
+    private var placedBounds: Rect?
     /// The proposal the node was placed with in the last layout pass.
     private(set) var placementProposal = ProposedSize.unspecified
     /// Whether this node or one below it rebuilt since it was last placed.
@@ -40,6 +56,8 @@ final class ViewNode {
     private var placedPurely = false
     /// ``layoutChildren``, until this node or one below it rebuilds.
     private var cachedLayoutChildren: [ViewNode]?
+    /// ``behaviorKinds``, until this node or one below it rebuilds.
+    private var cachedBehaviorKinds: BehaviorKinds?
     private(set) var isMounted = true
     var isDirty = false
     let depth: Int
@@ -166,54 +184,16 @@ final class ViewNode {
 
     /// The size this node wants for `proposal`; cached until the subtree rebuilds.
     func sizeThatFits(_ proposal: ProposedSize) -> Size {
-        if let cached = sizeCache[proposal] { return cached }
+        for entry in sizeCache where entry.proposal == proposal {
+            return entry.size
+        }
         let size =
             layout?.sizeThatFits(proposal, node: self) ?? ChildGroup(nodes: layoutChildren).sizeThatFits(proposal)
-        sizeCache[proposal] = size
+        if sizeCache.count == Self.sizeCacheLimit {
+            sizeCache.removeFirst()
+        }
+        sizeCache.append((proposal, size))
         return size
-    }
-
-    /// Places the node at `origin` with the size it wants for `proposal`.
-    /// A pure subtree that didn't change keeps its placement, moved to
-    /// `origin` if it has to be.
-    func place(at origin: Point, proposal: ProposedSize) {
-        if !needsPlacement, placedPurely, proposal == placementProposal {
-            if origin != frame.origin {
-                move(by: Point(x: origin.x - frame.minX, y: origin.y - frame.minY))
-            }
-            return
-        }
-        frame = Rect(origin: origin, size: sizeThatFits(proposal))
-        placementProposal = proposal
-        let children = layoutChildren
-        if let layout {
-            layout.placeChildren(of: self, in: frame, proposal: proposal)
-        } else {
-            ChildGroup(nodes: children).place(at: origin, proposal: proposal)
-        }
-        needsPlacement = false
-        placedPurely = (layout?.placesPurely ?? true) && children.allSatisfy(\.placedPurely)
-    }
-
-    /// Moves this subtree's frames by `delta`.
-    private func move(by delta: Point) {
-        frame = Rect(origin: Point(x: frame.minX + delta.x, y: frame.minY + delta.y), size: frame.size)
-        for child in children {
-            child.move(by: delta)
-        }
-    }
-
-    /// Marks this node and its ancestors for placing again and forgets their
-    /// layout children, which may include this node's. The walk goes to the
-    /// root: transparent nodes are never placed themselves, so their mark
-    /// stays set and can't end it.
-    private func invalidatePlacement() {
-        var node: ViewNode? = self
-        while let current = node {
-            current.needsPlacement = true
-            current.cachedLayoutChildren = nil
-            node = current.parent
-        }
     }
 
     /// Forgets the cached sizes of this node and of its ancestors, whose
@@ -228,11 +208,106 @@ final class ViewNode {
             node = current.parent
         }
     }
+}
+
+// MARK: - Placement and drawing
+
+extension ViewNode {
+    /// Places the node at `origin` with the size it wants for `proposal`.
+    /// A pure subtree that didn't change keeps its placement, moved to
+    /// `origin` if it has to be.
+    func place(at origin: Point, proposal: ProposedSize) {
+        // Placing goes top down, and a parent hands its moves down before it
+        // places its children, so the moves above this node are applied.
+        if !needsPlacement, placedPurely, proposal == placementProposal {
+            if origin != placedFrame.origin {
+                move(by: Point(x: origin.x - placedFrame.minX, y: origin.y - placedFrame.minY))
+            }
+            return
+        }
+        // The children are placed afresh, from where they are now.
+        pushPendingMove()
+        placedFrame = Rect(origin: origin, size: sizeThatFits(proposal))
+        placementProposal = proposal
+        let children = layoutChildren
+        if let layout {
+            layout.placeChildren(of: self, in: placedFrame, proposal: proposal)
+        } else {
+            ChildGroup(nodes: children).place(at: origin, proposal: proposal)
+        }
+        needsPlacement = false
+        // A loop rather than `allSatisfy` and `reduce`: closures in this
+        // main-actor class are checked for the actor on every call.
+        var pure = layout?.placesPurely ?? true
+        var bounds = placedFrame
+        for child in children {
+            pure = pure && child.placedPurely
+            if let childBounds = child.placedBounds {
+                bounds = bounds.union(childBounds)
+            }
+        }
+        placedPurely = pure
+        placedBounds = bounds
+    }
+
+    /// Moves this subtree by `delta`: this node now, its children when read.
+    private func move(by delta: Point) {
+        placedFrame = placedFrame.offsetBy(delta)
+        placedBounds = placedBounds?.offsetBy(delta)
+        pendingMove = Point(x: pendingMove.x + delta.x, y: pendingMove.y + delta.y)
+    }
+
+    /// Whether this subtree may cover cells in row `row`: `false` only for a
+    /// placed subtree that lies entirely above or below it.
+    func mayCover(row: Int) -> Bool {
+        guard layout != nil, let placedBounds else { return true }
+        return row >= placedBounds.minY && row < placedBounds.maxY
+    }
+
+    /// Applies the moves pending above this node to it.
+    private func applyPendingMoves() {
+        guard let parent else { return }
+        parent.applyPendingMoves()
+        parent.pushPendingMove()
+    }
+
+    /// Hands this node's pending move to its children. Walks from the root
+    /// down call it on each node they enter, so the nodes below are current.
+    func pushPendingMove() {
+        guard pendingMove != .zero else { return }
+        let delta = pendingMove
+        pendingMove = .zero
+        for child in children {
+            child.move(by: delta)
+        }
+    }
+
+    /// Marks this node and its ancestors for placing again and forgets their
+    /// layout children, which may include this node's. The walk goes to the
+    /// root: transparent nodes are never placed themselves, so their mark
+    /// stays set and can't end it.
+    private func invalidatePlacement() {
+        var node: ViewNode? = self
+        while let current = node {
+            current.needsPlacement = true
+            current.cachedLayoutChildren = nil
+            current.cachedBehaviorKinds = nil
+            node = current.parent
+        }
+    }
 
     // MARK: Drawing
 
     /// Draws this subtree.
     func draw(into canvas: inout Canvas, clip: Rect) {
+        // Rows scrolled out of view are skipped whole. Only rows: text can be
+        // wider than its frame, so nothing is skipped sideways.
+        // Drawing goes top down and hands moves down as it goes, so the
+        // moves above this node are already applied.
+        if layout != nil, let placedBounds, placedBounds.maxY <= clip.minY || placedBounds.minY >= clip.maxY {
+            return
+        }
+        pushPendingMove()
         var childClip = clip
         if let layout {
             layout.draw(self, into: &canvas, clip: clip)
@@ -240,6 +315,56 @@ final class ViewNode {
         }
         for child in children {
             child.draw(into: &canvas, clip: childClip)
+        }
+    }
+}
+
+/// Kinds of behaviour a subtree has, so walks that look for one kind can
+/// skip the subtrees without it.
+struct BehaviorKinds: OptionSet {
+    let rawValue: UInt8
+
+    static let focus = Self(rawValue: 1 << 0)
+    static let keys = Self(rawValue: 1 << 1)
+    static let paste = Self(rawValue: 1 << 2)
+    static let geometry = Self(rawValue: 1 << 3)
+    static let hover = Self(rawValue: 1 << 4)
+    static let scroll = Self(rawValue: 1 << 5)
+    /// A cursor position, or a text field, which sets one while placed.
+    static let cursor = Self(rawValue: 1 << 6)
+}
+
+extension ViewNode {
+    /// The kinds of behaviour this node and the nodes below it have.
+    var behaviorKinds: BehaviorKinds {
+        if let cachedBehaviorKinds { return cachedBehaviorKinds }
+        var kinds = ownBehaviorKinds
+        for child in children {
+            kinds.formUnion(child.behaviorKinds)
+        }
+        cachedBehaviorKinds = kinds
+        return kinds
+    }
+
+    private var ownBehaviorKinds: BehaviorKinds {
+        var kinds: BehaviorKinds = []
+        if behaviors.focus != nil { kinds.insert(.focus) }
+        if !behaviors.keyHandlers.isEmpty { kinds.insert(.keys) }
+        if !behaviors.pasteHandlers.isEmpty { kinds.insert(.paste) }
+        if !behaviors.geometryChange.isEmpty { kinds.insert(.geometry) }
+        if !behaviors.hoverHandlers.isEmpty { kinds.insert(.hover) }
+        if behaviors.scroll != nil { kinds.insert(.scroll) }
+        if behaviors.cursorPosition != nil || layout is FieldLayout { kinds.insert(.cursor) }
+        return kinds
+    }
+
+    /// Calls `body` with this node and every node below it that may have one
+    /// of `kinds`, in tree order, skipping subtrees with none of them.
+    func visit(having kinds: BehaviorKinds, _ body: (ViewNode) -> Void) {
+        guard !behaviorKinds.isDisjoint(with: kinds) else { return }
+        body(self)
+        for child in children {
+            child.visit(having: kinds, body)
         }
     }
 }

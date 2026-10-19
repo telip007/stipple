@@ -88,3 +88,6 @@ A `Text` that only grew, as a streamed reply, resumes word wrapping from a per-w
 
 ## [2026-10-19] update | Stopped clock for double clicks
 `ClickTracker` times clicks with an injectable `now`, and the double-click test stops it: on a loaded CI machine its two clicks were more than 500 ms apart. See [testing](concepts/testing.md#timing-dependent-tests).
+
+## [2026-10-19] update | Frames that cost what is on screen
+For long scrollbacks: lazy moves, culling of off-screen rows in drawing and hit testing, behaviour summaries that let tree walks skip subtrees, text measured from word widths instead of laid-out lines, lines reused at narrower widths, a list instead of a dictionary for the size cache, and loops instead of closures on layout paths (each closure call in a main-actor type was checked for the actor). A resize now changes an observable `LiveTerminalSize` instead of the environment and goes through the frame throttle; `EnvironmentValues.terminalSize` is `@MainActor`. Release build, 1,500 transcript blocks: idle frame about 1 ms, streamed delta 3 ms, scroll 6 ms, resize 30–60 ms. See [view system](concepts/view-system.md#retained-layout).
