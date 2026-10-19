@@ -257,6 +257,9 @@ private struct Workspace: View {
             $0.alternateScreen = true
             $0.mouseReporting = true
         }
+        // A stopped clock: the clicks are a double click however slowly the test runs.
+        let instant = ContinuousClock.now
+        runtime.clicks.now = { instant }
         _ = frame(runtime)
         await send(runtime, "\u{1B}[<0;2;1M\u{1B}[<0;2;1m")
         #expect(frame(runtime).first == "taps 1 doubles 0")

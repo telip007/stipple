@@ -14,6 +14,9 @@ struct ClickTracker {
 
     weak var pressed: ViewNode?
     var last: Click?
+    /// The clock clicks are timed with; tests stop it so that a slow machine
+    /// doesn't split a double click.
+    var now: @MainActor () -> ContinuousClock.Instant = { ContinuousClock.now }
     /// The nodes with hover handlers that the pointer is over.
     var hovered: [Weak] = []
 
@@ -117,7 +120,7 @@ extension Runtime {
         guard let pressed = clicks.pressed else { return }
         clicks.pressed = nil
         guard tapTarget(at: location) === pressed else { return }
-        let now = clock.now
+        let now = clicks.now()
         var count = 1
         if let last = clicks.last, last.location == location, now - last.time < ClickTracker.interval {
             count = last.count + 1
