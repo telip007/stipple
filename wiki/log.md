@@ -100,3 +100,6 @@ New `logs` example (alternate screen, `SelectionList`, `ScrollView` over a `Lazy
 
 ## [2026-10-19] update | Opaque backgrounds
 `.background(_ color:)` now writes background-colored spaces (`Canvas.paint`) like Ink's `renderBackground`, instead of only recoloring cells (`fill`). Text under an overlay box with a background no longer shows through its blank cells. See [rendering](concepts/rendering.md).
+
+## [2026-10-19] update | ForEach rows observe what they read
+`ViewNode.rebuild()` now tracks observation while a primitive view updates, not only while a body is evaluated. `ForEach` row closures run in its update, so a row reading an `@Observable` value (a highlighted index) never redrew. See [view system](concepts/view-system.md).

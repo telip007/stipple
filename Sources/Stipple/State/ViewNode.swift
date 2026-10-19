@@ -106,7 +106,7 @@ final class ViewNode {
         layoutPriority = 0
         let previousBehaviors = behaviors
         behaviors = NodeBehaviors()
-        let specs = (view as? any PrimitiveView)?.update(self) ?? evaluateBody()
+        let specs = (view as? any PrimitiveView).map(updateTracked) ?? evaluateBody()
         graph.behaviorsChanged(self, from: previousBehaviors)
         reconcile(specs)
     }
@@ -115,6 +115,18 @@ final class ViewNode {
         let view = view
         let body = evaluateTracked(installing: view) { Self.body(of: view) }
         return [ChildView(id: nil, view: body, environment: environment)]
+    }
+
+    /// Runs a primitive view's update while tracking what it reads: a
+    /// `ForEach` builds its rows there, and a row that reads an observable
+    /// value must redraw when it changes.
+    private func updateTracked(_ primitive: any PrimitiveView) -> [ChildView] {
+        let graph = graph
+        return withObservationTracking {
+            primitive.update(self)
+        } onChange: { [weak self] in
+            graph.invalidations.enqueue(self)
+        }
     }
 
     private static func body<V: View>(of view: V) -> any View {

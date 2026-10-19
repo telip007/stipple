@@ -54,6 +54,31 @@ struct StateAndEnvironmentTests {
         #expect(terminal.output.contains("changed"))
     }
 
+    @Test func forEachRowsRedrawWhenWhatTheyReadChanges() async {
+        // The value is read only inside the row closure, which ForEach runs
+        // in its own update rather than in a body.
+        struct Rows: View {
+            let model: Model
+            var body: some View {
+                VStack {
+                    ForEach(["a"], id: \.self) { row in
+                        Text("\(row) \(model.value)")
+                    }
+                }
+                .onKeyPress("x") {
+                    model.value = "changed"
+                    return .handled
+                }
+            }
+        }
+        let model = Model()
+        let (runtime, terminal) = makeRuntime(Rows(model: model))
+        #expect(terminal.output.contains("a start"))
+        runtime.handle(.input(Array("x".utf8)))
+        await runtime.settle()
+        #expect(terminal.output.contains("a changed"))
+    }
+
     @Test func bindingPassesStateDown() async {
         struct Child: View {
             @Binding var count: Int

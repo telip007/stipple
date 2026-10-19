@@ -29,8 +29,10 @@ The code lives in `Views/`, `State/`, `Layout/`, `Modifiers/` and `Runtime/`.
 ## The graph
 
 - `ViewNode.rebuild()`: a primitive's `update` runs, or a composite view's dynamic
-  properties are installed and its `body` evaluated inside
-  `withObservationTracking`. Any observed change (`@State`, `@Observable`
+  properties are installed and its `body` evaluated, both inside
+  `withObservationTracking`. A primitive's `update` is tracked too, because a
+  `ForEach` runs its row closures there: before 0.5.2 a value read only in a
+  row closure didn't redraw the list. Any observed change (`@State`, `@Observable`
   models) calls `invalidate()`, and the `ViewGraph` batches the node for the next frame
   ([ViewNode.swift](../../Sources/Stipple/State/ViewNode.swift)).
 - Reconciliation matches children by explicit id (`ForEach`), or by position,
