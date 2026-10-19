@@ -85,3 +85,6 @@ Frames now cost what changed instead of the whole tree: sizes, wrapped text line
 
 ## [2026-10-19] update | Growing text, typing and onSubmit
 A `Text` that only grew, as a streamed reply, resumes word wrapping from a per-width `WrapCheckpoint` instead of wrapping from the start; unlimited width is laid out as the ideal size. A key press or paste renders at once instead of at the next throttled frame, and key handlers are cached per tree revision and focus. `onSubmit` keeps its closure in a node-owned box, so the environment below stays identical and unchanged views keep their subtrees. See [view system](concepts/view-system.md#retained-layout).
+
+## [2026-10-19] update | Stopped clock for double clicks
+`ClickTracker` times clicks with an injectable `now`, and the double-click test stops it: on a loaded CI machine its two clicks were more than 500 ms apart. See [testing](concepts/testing.md#timing-dependent-tests).

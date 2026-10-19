@@ -1,7 +1,7 @@
 ---
 title: Testing
 summary: How the tests are structured, how to test terminal code without a tty, README example tests and the coverage gate.
-updated: 2026-10-18
+updated: 2026-10-19
 ---
 
 # Testing
@@ -53,3 +53,8 @@ volume for build artefacts. CI runs the same on Linux.
 Tests that wait for timers (TimelineView ticks, the 50 ms escape timeout,
 tasks) poll with `Runtime.waitUntil(timeout:_:)` instead of sleeping a fixed time.
 A fixed sleep passed locally but failed once in the pre-push Linux run under load.
+
+A test that needs events to happen *close together* can't poll: a loaded
+machine stretches the gap. Give the code an injectable clock and stop it.
+Double clicks are timed with `ClickTracker.now` for this; the double-click
+test failed on CI when its two clicks were more than 500 ms apart.
