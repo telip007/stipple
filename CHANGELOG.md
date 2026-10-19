@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/telip007/stipple/compare/0.5.1...0.5.2) (2026-10-19)
+
+
+### Bug Fixes
+
+* **state:** redraw ForEach rows when what they read changes ([d7a92cb](https://github.com/telip007/stipple/commit/d7a92cbbd668312128e80a33dd14dba38be37ce7))
+
 ## [0.5.1](https://github.com/telip007/stipple/compare/0.5.0...0.5.1) (2026-10-19)
 
 
