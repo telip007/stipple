@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.1](https://github.com/telip007/stipple/compare/0.5.0...0.5.1) (2026-10-19)
+
+
+### Bug Fixes
+
+* **render:** make colored backgrounds opaque ([b7a9896](https://github.com/telip007/stipple/commit/b7a98962737368a680206e4a7241263afc2d6a18))
+
+
+### Documentation
+
+* update examples and demos for the current feature set ([352b6fe](https://github.com/telip007/stipple/commit/352b6fe33d26f796ed4e10d69f29b5456926105b))
+
 ## [0.5.0](https://github.com/telip007/stipple/compare/0.4.0...0.5.0) (2026-10-19)
 
 
