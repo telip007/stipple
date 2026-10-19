@@ -1,7 +1,7 @@
 ---
 title: Architecture
 summary: The pipeline from a SwiftUI-style view tree to terminal bytes, the module boundaries and the contract each module implements.
-updated: 2026-10-18
+updated: 2026-10-19
 ---
 
 # Architecture
@@ -94,7 +94,7 @@ plus `string-width`, `wrap-ansi` and `cli-truncate` behaviour.
 - `struct Canvas`: a `width × height` grid of cells (grapheme, style, and a
   continuation flag for the second half of wide characters).
   `write(_ runs:at:clip:)` draws one line and clips to a `Rect`.
-  `fill(_ rect:background:clip:)` paints background only.
+  `fill(_ rect:background:clip:)` paints background only; `paint(_ rect:background:clip:)` covers cells with background spaces (used by `.background(_ color:)`).
   `drawBorder(_ border: BorderStyle, in:style:clip:)`.
   `encodedLines(colorDepth:) -> [String]` returns ANSI lines with minimal SGR
   transitions and trailing default cells trimmed, as Ink trims, with colors

@@ -99,6 +99,30 @@ struct Canvas: Sendable {
         }
     }
 
+    /// Covers every cell in `rect` (limited to `clip` and the canvas) with a
+    /// space of `background`, hiding what was drawn there before, as Ink's
+    /// `renderBackground` writes background-colored spaces.
+    ///
+    /// A wide character cut by the rectangle's left or right edge becomes
+    /// two spaces, so no glyph is left half covered.
+    mutating func paint(_ rect: Rect, background: Color, clip: Rect? = nil) {
+        let area = visibleArea(rect, clip: clip)
+        guard !area.isEmpty else { return }
+        let style = intern(Style(background: background))
+        for row in area.minY..<area.maxY {
+            let base = row * width
+            if area.minX > 0, cells[base + area.minX].isContinuation {
+                blank(base + area.minX - 1)
+            }
+            if area.maxX < width, cells[base + area.maxX].isContinuation {
+                blank(base + area.maxX)
+            }
+            for index in (base + area.minX)..<(base + area.maxX) {
+                cells[index] = Storage(grapheme: " ", styleID: style, isContinuation: false)
+            }
+        }
+    }
+
     // MARK: - Helpers
 
     /// `rect` limited to the canvas and to `clip`.

@@ -97,3 +97,6 @@ For long scrollbacks: lazy moves, culling of off-screen rows in drawing and hit 
 
 ## [2026-10-19] update | Examples and demos for the current feature set
 New `logs` example (alternate screen, `SelectionList`, `ScrollView` over a `LazyVStack` that follows new lines, filter `TextField`, mouse wheel, click, hover and tap) and hero GIF. `chat` now streams a pretend assistant's replies after a spinner; `tasks` runs three jobs at a time with spinner styles and progress bars. All demos re-recorded; README feature list and examples updated. See [demos](concepts/demos.md).
+
+## [2026-10-19] update | Opaque backgrounds
+`.background(_ color:)` now writes background-colored spaces (`Canvas.paint`) like Ink's `renderBackground`, instead of only recoloring cells (`fill`). Text under an overlay box with a background no longer shows through its blank cells. See [rendering](concepts/rendering.md).

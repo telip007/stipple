@@ -17,6 +17,15 @@ struct InkFeatureTests {
         #expect(plain(background) == "ab")
     }
 
+    @Test func aColoredBackgroundHidesWhatIsBehindIt() {
+        // As in Ink, a background is opaque: an overlay box with one covers
+        // the text under it, also where its own content is blank.
+        let view = Text("abcdefgh").overlay {
+            Text("x").frame(width: 4).background(.blue)
+        }
+        #expect(plain(view) == "ab x  gh")
+    }
+
     @Test func textTransformRewritesLines() {
         let view = VStack {
             Text("one")

@@ -101,7 +101,7 @@ struct BackgroundLayout: SingleChildLayout {
     }
 
     func draw(_ node: ViewNode, into canvas: inout Canvas, clip: Rect) {
-        canvas.fill(node.frame, background: color, clip: clip)
+        canvas.paint(node.frame, background: color, clip: clip)
     }
 }
 

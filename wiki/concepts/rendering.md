@@ -1,7 +1,7 @@
 ---
 title: Rendering
 summary: Text measurement, wrapping and truncation, ANSI parsing, the cell canvas, borders, SGR encoding and color depth.
-updated: 2026-10-18
+updated: 2026-10-19
 ---
 
 # Rendering
@@ -44,6 +44,7 @@ ANSIText.encode(_ runs: [StyledRun]) -> String
 Canvas(width:height:)
 canvas.write(_ runs: [StyledRun], at: Point, clip: Rect? = nil)
 canvas.fill(_ rect: Rect, background: Color, clip: Rect? = nil)
+canvas.paint(_ rect: Rect, background: Color, clip: Rect? = nil)
 canvas.drawBorder(_ border: BorderStyle, in: Rect, edges: BorderStyle.Edges = .all, style: Style, clip: Rect? = nil)
 canvas.drawBorder(_ border: BorderStyle, in: Rect, edges: BorderStyle.Edges = .all, colors: BorderStyle.Colors, clip: Rect? = nil)
 canvas.encodedLines(colorDepth: ColorDepth = .trueColor) -> [String]
@@ -114,8 +115,12 @@ names or any `COLORTERM` (16). The tests use upstream's expected values.
   a glyph.** The cell that is left becomes a space with its own style, so
   backgrounds survive. The tests port Ink's `clip-wide-background` and
   `overlap-wide-background`.
-- **`fill` keeps characters.** It only sets the background. If you want to hide
-  what is underneath, write spaces over it.
+- **`fill` keeps characters; `paint` covers them.** `fill` only sets the
+  background. `paint` writes background-colored spaces, as Ink's
+  `renderBackground` does, and is what `.background(_ color:)` uses, so a
+  colored background is opaque: an overlay box with one hides the text under
+  it, also where its own content is blank. (Before 0.5.1 `.background` used
+  `fill`, and text under an overlay showed through its blank cells.)
 - **Hidden border sides drop their corners**, as in Ink: with the left side
   hidden the top row starts with the top edge character. A 1-row box draws the
   bottom border over the top one.

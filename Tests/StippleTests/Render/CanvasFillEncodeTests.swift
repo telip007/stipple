@@ -20,6 +20,30 @@ import Testing
         #expect(canvas.cell(x: 3, y: 1)?.style == .plain)
     }
 
+    @Test func paintCoversCharactersWithBackgroundSpaces() {
+        var canvas = canvas(4, 2)
+        canvas.write([run("ab", .red)], at: .zero)
+        canvas.paint(Rect(x: 1, y: 0, width: 2, height: 2), background: .blue)
+        #expect(canvas.plainLines() == ["a   ", "    "])
+        #expect(canvas.cell(x: 0, y: 0)?.style == .red)
+        #expect(canvas.cell(x: 1, y: 0)?.style == .onBlue)
+        #expect(canvas.cell(x: 2, y: 1)?.style == .onBlue)
+        #expect(canvas.cell(x: 3, y: 1)?.style == .plain)
+    }
+
+    @Test func paintSplitsWideCharactersAtItsEdgesAndRespectsTheClip() {
+        var canvas = canvas(6)
+        canvas.write([run("界界界", .plain)], at: .zero)
+        canvas.paint(Rect(x: 1, y: 0, width: 2, height: 1), background: .blue)
+        #expect(canvas.plainLines() == ["    界"])
+        #expect(canvas.cell(x: 3, y: 0)?.style == .plain)
+        canvas.paint(
+            Rect(x: 0, y: 0, width: 6, height: 1), background: .red, clip: Rect(x: 5, y: 0, width: 1, height: 1))
+        #expect(canvas.cell(x: 4, y: 0)?.grapheme == " ")
+        #expect(canvas.cell(x: 5, y: 0)?.style == Style(background: .red))
+        canvas.paint(Rect(x: 0, y: 0, width: 0, height: 1), background: .red)
+    }
+
     @Test func fillIsLimitedByClipAndCanvas() {
         var canvas = canvas(4)
         canvas.fill(
