@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/telip007/stipple/compare/0.4.0...0.5.0) (2026-10-19)
+
+
+### Features
+
+* add LazyVStack for long scroll content ([f2f714f](https://github.com/telip007/stipple/commit/f2f714f1ce5199d3d0cf301f92a13a85a25a692c))
+
 ## [0.4.0](https://github.com/telip007/stipple/compare/0.3.3...0.4.0) (2026-10-19)
 
 
