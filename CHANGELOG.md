@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0](https://github.com/telip007/stipple/compare/0.3.3...0.4.0) (2026-10-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* EnvironmentValues.terminalSize is @MainActor.
+
+### Performance
+
+* make frames cost what is on screen, not the whole scrollback ([2988731](https://github.com/telip007/stipple/commit/2988731ad7006d112b1e7b4b3ad9da2a25293038))
+
 ## [0.3.3](https://github.com/telip007/stipple/compare/0.3.2...0.3.3) (2026-10-19)
 
 
